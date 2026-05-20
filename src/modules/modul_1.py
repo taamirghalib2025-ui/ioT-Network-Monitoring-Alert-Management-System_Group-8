@@ -81,7 +81,7 @@ class IoTGraph:
                           head: Optional[EdgeNode],
                           dest: str) -> Optional[EdgeNode]:
        
-        dummy      = EdgeNode('_dummy_', 0)
+        dummy      = EdgeNode('__dummy__', 0)
         dummy.next = head
         prev, curr = dummy, head
         while curr is not None:
@@ -271,7 +271,7 @@ def demo_modul1():
         print("    Semua perangkat terjangkau dari GATEWAY_0 ✓")
 
     # ── 4. Uji remove_link ───────────────────────────────────
-    print("\n[4] Uji remove_link SERVER_1 ↔️ GATEWAY_0:")
+    print("\n[4] Uji remove_link SERVER_1 ↔ GATEWAY_0:")
     # Cek dulu apakah edge ada
     before = [d for d, _ in graph.neighbors('SERVER_1')]
     graph.remove_link('SERVER_1', 'GATEWAY_0')
