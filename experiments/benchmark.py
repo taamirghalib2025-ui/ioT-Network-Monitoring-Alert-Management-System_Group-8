@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 
+=======
+>>>>>>> 8393246f33b4e1273ad5112f1c20543d6bff9082
 import time
 import random
 import string
