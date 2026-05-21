@@ -1,635 +1,743 @@
-# ================================================================
-# linked_list.py
-# Modul: Implementasi Singly Linked List & Doubly Linked List
-# Topik 4: IoT Network Monitoring & Alert Management System
-# ELT60213 Algoritma dan Struktur Data - TA 2025/2026
-# ================================================================
+"""
+test_linked_list.py — Unit Test untuk SinglyLinkedList & DoublyLinkedList
+Lokasi  : tests/test_linked_list.py
+Mata Kuliah : ELT60213 Algoritma dan Struktur Data
+Team Based Project TA 2025/2026 — Group 8
 
-from __future__ import annotations
-from typing import Optional, Any
+Cara menjalankan:
+    python -m pytest tests/test_linked_list.py -v
+    atau
+    python tests/test_linked_list.py
+"""
 
+import unittest
+import sys
+import os
 
-# ── Node untuk Singly Linked List ────────────────────────────────
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src', 'data_structures'))
 
-class SLLNode:
-    """
-    Node untuk Singly Linked List.
-    Menyimpan data dan pointer ke node berikutnya.
-    Big-O ruang: O(1) per node.
-    """
-    def __init__(self, data: Any = None):
-        self.data = data
-        self.next: Optional[SLLNode] = None
-
-    def __repr__(self) -> str:
-        return f"SLLNode({self.data})"
+from linked_list import SinglyLinkedList, DoublyLinkedList, SLLNode, DLLNode
 
 
-# ── Node untuk Doubly Linked List ────────────────────────────────
+# ══════════════════════════════════════════════════════════════
+#  SINGLY LINKED LIST — TEST SUITE
+# ══════════════════════════════════════════════════════════════
 
-class DLLNode:
-    """
-    Node untuk Doubly Linked List.
-    Menyimpan data, pointer ke node berikutnya, dan pointer ke node sebelumnya.
-    Big-O ruang: O(1) per node.
-    """
-    def __init__(self, data: Any = None):
-        self.data = data
-        self.next: Optional[DLLNode] = None
-        self.prev: Optional[DLLNode] = None
+class TestSLLInisialisasi(unittest.TestCase):
+    """Test kondisi awal SinglyLinkedList."""
 
-    def __repr__(self) -> str:
-        return f"DLLNode({self.data})"
+    def test_list_kosong_saat_dibuat(self):
+        sll = SinglyLinkedList()
+        self.assertTrue(sll.is_empty())
+
+    def test_size_nol_saat_dibuat(self):
+        sll = SinglyLinkedList()
+        self.assertEqual(len(sll), 0)
+
+    def test_head_none_saat_dibuat(self):
+        sll = SinglyLinkedList()
+        self.assertIsNone(sll.head)
+
+    def test_tail_none_saat_dibuat(self):
+        sll = SinglyLinkedList()
+        self.assertIsNone(sll.tail)
 
 
-# ── Singly Linked List ────────────────────────────────────────────
+class TestSLLAddFront(unittest.TestCase):
+    """Test operasi add_front — O(1)."""
 
-class SinglyLinkedList:
-    """
-    Implementasi Singly Linked List dari nol.
-    Digunakan sebagai fondasi Stack, Queue, Priority Queue, dan adjacency list Graph.
+    def setUp(self):
+        self.sll = SinglyLinkedList()
 
-    Operasi utama:
-    - add_front  : O(1)
-    - add_back   : O(1)  <- menggunakan pointer tail
-    - remove_front: O(1)
-    - remove_back : O(n)  <- harus traverse hingga node sebelum tail
-    - find       : O(n)
-    - delete_by_value: O(n)
-    - size / is_empty: O(1)
+    def test_add_front_satu_elemen(self):
+        self.sll.add_front("SENSOR_1")
+        self.assertEqual(self.sll.head.data, "SENSOR_1")
 
-    Big-O ruang: O(n) untuk n elemen.
-    """
+    def test_add_front_update_head(self):
+        self.sll.add_front("SENSOR_1")
+        self.sll.add_front("GATEWAY_0")
+        self.assertEqual(self.sll.head.data, "GATEWAY_0")
 
-    def __init__(self):
-        self.head: Optional[SLLNode] = None
-        self.tail: Optional[SLLNode] = None
-        self._size: int = 0
+    def test_add_front_urutan_benar(self):
+        for x in ["C", "B", "A"]:
+            self.sll.add_front(x)
+        self.assertEqual(self.sll.to_list(), ["A", "B", "C"])
 
-    # ── Properti ─────────────────────────────────────────────────
+    def test_add_front_size_bertambah(self):
+        self.sll.add_front("X")
+        self.sll.add_front("Y")
+        self.assertEqual(len(self.sll), 2)
 
-    def is_empty(self) -> bool:
-        """Cek apakah list kosong. Big-O: O(1)."""
-        return self._size == 0
+    def test_add_front_tail_diset_pada_elemen_pertama(self):
+        self.sll.add_front("SENSOR_1")
+        self.assertEqual(self.sll.tail.data, "SENSOR_1")
 
-    def __len__(self) -> int:
-        """Kembalikan jumlah elemen. Big-O: O(1)."""
-        return self._size
+    def test_add_front_tidak_ubah_tail_saat_sudah_ada(self):
+        self.sll.add_front("A")
+        self.sll.add_front("B")
+        self.assertEqual(self.sll.tail.data, "A")
 
-    # ── Operasi Penyisipan ────────────────────────────────────────
 
-    def add_front(self, data: Any) -> None:
+class TestSLLAddBack(unittest.TestCase):
+    """Test operasi add_back — O(1)."""
+
+    def setUp(self):
+        self.sll = SinglyLinkedList()
+
+    def test_add_back_satu_elemen(self):
+        self.sll.add_back("SERVER_1")
+        self.assertEqual(self.sll.tail.data, "SERVER_1")
+
+    def test_add_back_update_tail(self):
+        self.sll.add_back("A")
+        self.sll.add_back("B")
+        self.assertEqual(self.sll.tail.data, "B")
+
+    def test_add_back_urutan_benar(self):
+        for x in ["A", "B", "C"]:
+            self.sll.add_back(x)
+        self.assertEqual(self.sll.to_list(), ["A", "B", "C"])
+
+    def test_add_back_size_bertambah(self):
+        self.sll.add_back("X")
+        self.sll.add_back("Y")
+        self.assertEqual(len(self.sll), 2)
+
+    def test_add_back_head_diset_pada_elemen_pertama(self):
+        self.sll.add_back("SENSOR_1")
+        self.assertEqual(self.sll.head.data, "SENSOR_1")
+
+    def test_add_back_tidak_ubah_head_saat_sudah_ada(self):
+        self.sll.add_back("A")
+        self.sll.add_back("B")
+        self.assertEqual(self.sll.head.data, "A")
+
+
+class TestSLLInsertAfter(unittest.TestCase):
+    """Test operasi insert_after — O(n)."""
+
+    def setUp(self):
+        self.sll = SinglyLinkedList()
+        for x in ["A", "B", "D"]:
+            self.sll.add_back(x)
+
+    def test_insert_after_tengah(self):
+        self.sll.insert_after("B", "C")
+        self.assertEqual(self.sll.to_list(), ["A", "B", "C", "D"])
+
+    def test_insert_after_tail(self):
+        self.sll.insert_after("D", "E")
+        self.assertEqual(self.sll.tail.data, "E")
+
+    def test_insert_after_target_tidak_ada(self):
+        result = self.sll.insert_after("Z", "X")
+        self.assertFalse(result)
+
+    def test_insert_after_berhasil_return_true(self):
+        result = self.sll.insert_after("A", "AA")
+        self.assertTrue(result)
+
+    def test_insert_after_size_bertambah(self):
+        self.sll.insert_after("A", "AA")
+        self.assertEqual(len(self.sll), 4)
+
+
+class TestSLLRemoveFront(unittest.TestCase):
+    """Test operasi remove_front — O(1)."""
+
+    def setUp(self):
+        self.sll = SinglyLinkedList()
+        for x in ["GATEWAY_0", "SENSOR_1", "SERVER_1"]:
+            self.sll.add_back(x)
+
+    def test_remove_front_kembalikan_data_benar(self):
+        data = self.sll.remove_front()
+        self.assertEqual(data, "GATEWAY_0")
+
+    def test_remove_front_update_head(self):
+        self.sll.remove_front()
+        self.assertEqual(self.sll.head.data, "SENSOR_1")
+
+    def test_remove_front_size_berkurang(self):
+        self.sll.remove_front()
+        self.assertEqual(len(self.sll), 2)
+
+    def test_remove_front_list_kosong_return_none(self):
+        sll_kosong = SinglyLinkedList()
+        self.assertIsNone(sll_kosong.remove_front())
+
+    def test_remove_front_elemen_terakhir_reset_head_tail(self):
+        sll = SinglyLinkedList()
+        sll.add_back("X")
+        sll.remove_front()
+        self.assertIsNone(sll.head)
+        self.assertIsNone(sll.tail)
+
+
+class TestSLLRemoveBack(unittest.TestCase):
+    """Test operasi remove_back — O(n)."""
+
+    def setUp(self):
+        self.sll = SinglyLinkedList()
+        for x in ["A", "B", "C"]:
+            self.sll.add_back(x)
+
+    def test_remove_back_kembalikan_data_benar(self):
+        data = self.sll.remove_back()
+        self.assertEqual(data, "C")
+
+    def test_remove_back_update_tail(self):
+        self.sll.remove_back()
+        self.assertEqual(self.sll.tail.data, "B")
+
+    def test_remove_back_size_berkurang(self):
+        self.sll.remove_back()
+        self.assertEqual(len(self.sll), 2)
+
+    def test_remove_back_list_kosong_return_none(self):
+        sll_kosong = SinglyLinkedList()
+        self.assertIsNone(sll_kosong.remove_back())
+
+    def test_remove_back_elemen_terakhir_reset_head_tail(self):
+        sll = SinglyLinkedList()
+        sll.add_back("X")
+        sll.remove_back()
+        self.assertIsNone(sll.head)
+        self.assertIsNone(sll.tail)
+
+    def test_remove_back_dua_elemen(self):
+        sll = SinglyLinkedList()
+        sll.add_back("P")
+        sll.add_back("Q")
+        sll.remove_back()
+        self.assertEqual(sll.head.data, "P")
+        self.assertEqual(sll.tail.data, "P")
+
+
+class TestSLLDeleteByValue(unittest.TestCase):
+    """Test operasi delete_by_value — O(n)."""
+
+    def setUp(self):
+        self.sll = SinglyLinkedList()
+        for x in ["A", "B", "C", "B", "D"]:
+            self.sll.add_back(x)
+
+    def test_delete_nilai_ada_return_true(self):
+        self.assertTrue(self.sll.delete_by_value("C"))
+
+    def test_delete_nilai_tidak_ada_return_false(self):
+        self.assertFalse(self.sll.delete_by_value("Z"))
+
+    def test_delete_hanya_kemunculan_pertama(self):
+        self.sll.delete_by_value("B")
+        # "B" kedua masih ada
+        self.assertTrue(self.sll.contains("B"))
+
+    def test_delete_head(self):
+        self.sll.delete_by_value("A")
+        self.assertEqual(self.sll.head.data, "B")
+
+    def test_delete_tail(self):
+        self.sll.delete_by_value("D")
+        self.assertEqual(self.sll.tail.data, "B")
+
+    def test_delete_size_berkurang(self):
+        self.sll.delete_by_value("C")
+        self.assertEqual(len(self.sll), 4)
+
+    def test_delete_pada_list_kosong(self):
+        sll_kosong = SinglyLinkedList()
+        self.assertFalse(sll_kosong.delete_by_value("X"))
+
+
+class TestSLLFind(unittest.TestCase):
+    """Test operasi find & contains — O(n)."""
+
+    def setUp(self):
+        self.sll = SinglyLinkedList()
+        for x in ["SENSOR_1", "GATEWAY_0", "SERVER_1"]:
+            self.sll.add_back(x)
+
+    def test_find_ada_return_node(self):
+        node = self.sll.find("GATEWAY_0")
+        self.assertIsInstance(node, SLLNode)
+        self.assertEqual(node.data, "GATEWAY_0")
+
+    def test_find_tidak_ada_return_none(self):
+        self.assertIsNone(self.sll.find("SENSOR_99"))
+
+    def test_contains_ada_return_true(self):
+        self.assertTrue(self.sll.contains("SERVER_1"))
+
+    def test_contains_tidak_ada_return_false(self):
+        self.assertFalse(self.sll.contains("UNKNOWN"))
+
+    def test_get_at_index_valid(self):
+        self.assertEqual(self.sll.get_at(0), "SENSOR_1")
+        self.assertEqual(self.sll.get_at(1), "GATEWAY_0")
+        self.assertEqual(self.sll.get_at(2), "SERVER_1")
+
+    def test_get_at_index_negatif_return_none(self):
+        self.assertIsNone(self.sll.get_at(-1))
+
+    def test_get_at_index_melebihi_size_return_none(self):
+        self.assertIsNone(self.sll.get_at(99))
+
+
+class TestSLLReverse(unittest.TestCase):
+    """Test operasi reverse — O(n)."""
+
+    def test_reverse_list_biasa(self):
+        sll = SinglyLinkedList()
+        for x in [1, 2, 3, 4, 5]:
+            sll.add_back(x)
+        sll.reverse()
+        self.assertEqual(sll.to_list(), [5, 4, 3, 2, 1])
+
+    def test_reverse_head_dan_tail_tertukar(self):
+        sll = SinglyLinkedList()
+        for x in ["A", "B", "C"]:
+            sll.add_back(x)
+        sll.reverse()
+        self.assertEqual(sll.head.data, "C")
+        self.assertEqual(sll.tail.data, "A")
+
+    def test_reverse_satu_elemen(self):
+        sll = SinglyLinkedList()
+        sll.add_back("X")
+        sll.reverse()
+        self.assertEqual(sll.to_list(), ["X"])
+
+    def test_reverse_dua_kali_kembali_ke_semula(self):
+        sll = SinglyLinkedList()
+        for x in [1, 2, 3]:
+            sll.add_back(x)
+        sll.reverse()
+        sll.reverse()
+        self.assertEqual(sll.to_list(), [1, 2, 3])
+
+    def test_reverse_list_kosong_tidak_crash(self):
+        sll = SinglyLinkedList()
+        try:
+            sll.reverse()
+        except Exception as e:
+            self.fail(f"reverse() pada list kosong crash: {e}")
+
+
+class TestSLLUtilitas(unittest.TestCase):
+    """Test to_list, clear, iterasi — O(n) / O(1)."""
+
+    def test_to_list_benar(self):
+        sll = SinglyLinkedList()
+        for x in ["A", "B", "C"]:
+            sll.add_back(x)
+        self.assertEqual(sll.to_list(), ["A", "B", "C"])
+
+    def test_to_list_kosong(self):
+        self.assertEqual(SinglyLinkedList().to_list(), [])
+
+    def test_clear_reset_semua(self):
+        sll = SinglyLinkedList()
+        for x in [1, 2, 3]:
+            sll.add_back(x)
+        sll.clear()
+        self.assertTrue(sll.is_empty())
+        self.assertIsNone(sll.head)
+        self.assertIsNone(sll.tail)
+        self.assertEqual(len(sll), 0)
+
+    def test_iterasi_for_loop(self):
+        sll = SinglyLinkedList()
+        for x in [10, 20, 30]:
+            sll.add_back(x)
+        result = [x for x in sll]
+        self.assertEqual(result, [10, 20, 30])
+
+    def test_iterasi_sum(self):
+        sll = SinglyLinkedList()
+        for x in [1, 2, 3, 4, 5]:
+            sll.add_back(x)
+        self.assertEqual(sum(x for x in sll), 15)
+
+
+# ══════════════════════════════════════════════════════════════
+#  DOUBLY LINKED LIST — TEST SUITE
+# ══════════════════════════════════════════════════════════════
+
+class TestDLLInisialisasi(unittest.TestCase):
+    """Test kondisi awal DoublyLinkedList."""
+
+    def test_list_kosong_saat_dibuat(self):
+        dll = DoublyLinkedList()
+        self.assertTrue(dll.is_empty())
+
+    def test_size_nol_saat_dibuat(self):
+        dll = DoublyLinkedList()
+        self.assertEqual(len(dll), 0)
+
+    def test_head_none_saat_dibuat(self):
+        self.assertIsNone(DoublyLinkedList().head)
+
+    def test_tail_none_saat_dibuat(self):
+        self.assertIsNone(DoublyLinkedList().tail)
+
+
+class TestDLLAddFront(unittest.TestCase):
+    """Test operasi add_front — O(1)."""
+
+    def setUp(self):
+        self.dll = DoublyLinkedList()
+
+    def test_add_front_satu_elemen(self):
+        self.dll.add_front("ALERT_1")
+        self.assertEqual(self.dll.head.data, "ALERT_1")
+
+    def test_add_front_update_head(self):
+        self.dll.add_front("ALERT_1")
+        self.dll.add_front("ALERT_0")
+        self.assertEqual(self.dll.head.data, "ALERT_0")
+
+    def test_add_front_pointer_prev_head_none(self):
+        self.dll.add_front("A")
+        self.dll.add_front("B")
+        self.assertIsNone(self.dll.head.prev)
+
+    def test_add_front_pointer_next_benar(self):
+        self.dll.add_front("A")
+        self.dll.add_front("B")
+        self.assertEqual(self.dll.head.next.data, "A")
+
+    def test_add_front_size_bertambah(self):
+        self.dll.add_front("X")
+        self.dll.add_front("Y")
+        self.assertEqual(len(self.dll), 2)
+
+    def test_add_front_urutan_benar(self):
+        for x in ["C", "B", "A"]:
+            self.dll.add_front(x)
+        self.assertEqual(self.dll.to_list(), ["A", "B", "C"])
+
+
+class TestDLLAddBack(unittest.TestCase):
+    """Test operasi add_back — O(1)."""
+
+    def setUp(self):
+        self.dll = DoublyLinkedList()
+
+    def test_add_back_satu_elemen(self):
+        self.dll.add_back("ALERT_1")
+        self.assertEqual(self.dll.tail.data, "ALERT_1")
+
+    def test_add_back_update_tail(self):
+        self.dll.add_back("A")
+        self.dll.add_back("B")
+        self.assertEqual(self.dll.tail.data, "B")
+
+    def test_add_back_pointer_next_tail_none(self):
+        self.dll.add_back("A")
+        self.dll.add_back("B")
+        self.assertIsNone(self.dll.tail.next)
+
+    def test_add_back_pointer_prev_benar(self):
+        self.dll.add_back("A")
+        self.dll.add_back("B")
+        self.assertEqual(self.dll.tail.prev.data, "A")
+
+    def test_add_back_size_bertambah(self):
+        self.dll.add_back("X")
+        self.dll.add_back("Y")
+        self.assertEqual(len(self.dll), 2)
+
+    def test_add_back_urutan_benar(self):
+        for x in ["A", "B", "C"]:
+            self.dll.add_back(x)
+        self.assertEqual(self.dll.to_list(), ["A", "B", "C"])
+
+
+class TestDLLRemoveFront(unittest.TestCase):
+    """Test operasi remove_front — O(1)."""
+
+    def setUp(self):
+        self.dll = DoublyLinkedList()
+        for x in ["ALERT_1", "ALERT_2", "ALERT_3"]:
+            self.dll.add_back(x)
+
+    def test_remove_front_kembalikan_data_benar(self):
+        self.assertEqual(self.dll.remove_front(), "ALERT_1")
+
+    def test_remove_front_update_head(self):
+        self.dll.remove_front()
+        self.assertEqual(self.dll.head.data, "ALERT_2")
+
+    def test_remove_front_prev_head_baru_none(self):
+        self.dll.remove_front()
+        self.assertIsNone(self.dll.head.prev)
+
+    def test_remove_front_size_berkurang(self):
+        self.dll.remove_front()
+        self.assertEqual(len(self.dll), 2)
+
+    def test_remove_front_list_kosong_return_none(self):
+        self.assertIsNone(DoublyLinkedList().remove_front())
+
+    def test_remove_front_elemen_terakhir_reset_head_tail(self):
+        dll = DoublyLinkedList()
+        dll.add_back("X")
+        dll.remove_front()
+        self.assertIsNone(dll.head)
+        self.assertIsNone(dll.tail)
+
+
+class TestDLLRemoveBack(unittest.TestCase):
+    """Test operasi remove_back — O(1) keunggulan DLL."""
+
+    def setUp(self):
+        self.dll = DoublyLinkedList()
+        for x in ["A", "B", "C"]:
+            self.dll.add_back(x)
+
+    def test_remove_back_kembalikan_data_benar(self):
+        self.assertEqual(self.dll.remove_back(), "C")
+
+    def test_remove_back_update_tail(self):
+        self.dll.remove_back()
+        self.assertEqual(self.dll.tail.data, "B")
+
+    def test_remove_back_next_tail_baru_none(self):
+        self.dll.remove_back()
+        self.assertIsNone(self.dll.tail.next)
+
+    def test_remove_back_size_berkurang(self):
+        self.dll.remove_back()
+        self.assertEqual(len(self.dll), 2)
+
+    def test_remove_back_list_kosong_return_none(self):
+        self.assertIsNone(DoublyLinkedList().remove_back())
+
+    def test_remove_back_elemen_terakhir_reset_head_tail(self):
+        dll = DoublyLinkedList()
+        dll.add_back("X")
+        dll.remove_back()
+        self.assertIsNone(dll.head)
+        self.assertIsNone(dll.tail)
+
+    def test_remove_back_dua_elemen(self):
+        dll = DoublyLinkedList()
+        dll.add_back("P")
+        dll.add_back("Q")
+        dll.remove_back()
+        self.assertEqual(dll.head.data, "P")
+        self.assertEqual(dll.tail.data, "P")
+        self.assertIsNone(dll.tail.next)
+
+
+class TestDLLDeleteNode(unittest.TestCase):
+    """Test operasi delete_node — O(1) dengan referensi node."""
+
+    def setUp(self):
+        self.dll = DoublyLinkedList()
+        for x in ["A", "B", "C", "D"]:
+            self.dll.add_back(x)
+
+    def test_delete_node_tengah(self):
+        node_b = self.dll.find("B")
+        self.dll.delete_node(node_b)
+        self.assertEqual(self.dll.to_list(), ["A", "C", "D"])
+
+    def test_delete_node_head(self):
+        self.dll.delete_node(self.dll.head)
+        self.assertEqual(self.dll.head.data, "B")
+
+    def test_delete_node_tail(self):
+        self.dll.delete_node(self.dll.tail)
+        self.assertEqual(self.dll.tail.data, "C")
+
+    def test_delete_node_size_berkurang(self):
+        node_c = self.dll.find("C")
+        self.dll.delete_node(node_c)
+        self.assertEqual(len(self.dll), 3)
+
+    def test_delete_node_pointer_konsisten(self):
+        """Setelah hapus B, A.next harus C dan C.prev harus A."""
+        node_b = self.dll.find("B")
+        self.dll.delete_node(node_b)
+        node_a = self.dll.find("A")
+        node_c = self.dll.find("C")
+        self.assertEqual(node_a.next.data, "C")
+        self.assertEqual(node_c.prev.data, "A")
+
+    def test_delete_by_value_return_true(self):
+        self.assertTrue(self.dll.delete_by_value("C"))
+
+    def test_delete_by_value_return_false(self):
+        self.assertFalse(self.dll.delete_by_value("Z"))
+
+
+class TestDLLFind(unittest.TestCase):
+    """Test operasi find, contains, find_backward — O(n)."""
+
+    def setUp(self):
+        self.dll = DoublyLinkedList()
+        for x in ["SENSOR_1", "GATEWAY_0", "SERVER_1", "SENSOR_2"]:
+            self.dll.add_back(x)
+
+    def test_find_ada_return_dllnode(self):
+        node = self.dll.find("GATEWAY_0")
+        self.assertIsInstance(node, DLLNode)
+        self.assertEqual(node.data, "GATEWAY_0")
+
+    def test_find_tidak_ada_return_none(self):
+        self.assertIsNone(self.dll.find("UNKNOWN"))
+
+    def test_contains_ada_return_true(self):
+        self.assertTrue(self.dll.contains("SERVER_1"))
+
+    def test_contains_tidak_ada_return_false(self):
+        self.assertFalse(self.dll.contains("XX99"))
+
+    def test_find_backward_ada(self):
+        node = self.dll.find_backward("SENSOR_2")
+        self.assertIsNotNone(node)
+        self.assertEqual(node.data, "SENSOR_2")
+
+    def test_find_backward_tidak_ada_return_none(self):
+        self.assertIsNone(self.dll.find_backward("ZZZ"))
+
+    def test_find_backward_hasil_sama_dengan_find(self):
+        node_fwd = self.dll.find("SENSOR_1")
+        node_bwd = self.dll.find_backward("SENSOR_1")
+        self.assertEqual(node_fwd.data, node_bwd.data)
+
+
+class TestDLLUtilitas(unittest.TestCase):
+    """Test to_list, to_list_reversed, clear, iterasi."""
+
+    def setUp(self):
+        self.dll = DoublyLinkedList()
+        for x in ["A", "B", "C", "D"]:
+            self.dll.add_back(x)
+
+    def test_to_list_maju(self):
+        self.assertEqual(self.dll.to_list(), ["A", "B", "C", "D"])
+
+    def test_to_list_reversed(self):
+        self.assertEqual(self.dll.to_list_reversed(), ["D", "C", "B", "A"])
+
+    def test_to_list_dan_reversed_konsisten(self):
+        """to_list dan to_list_reversed harus saling invers."""
+        self.assertEqual(self.dll.to_list(), list(reversed(self.dll.to_list_reversed())))
+
+    def test_clear_reset_semua(self):
+        self.dll.clear()
+        self.assertTrue(self.dll.is_empty())
+        self.assertIsNone(self.dll.head)
+        self.assertIsNone(self.dll.tail)
+        self.assertEqual(len(self.dll), 0)
+
+    def test_iterasi_for_loop(self):
+        result = [x for x in self.dll]
+        self.assertEqual(result, ["A", "B", "C", "D"])
+
+    def test_to_list_kosong(self):
+        self.assertEqual(DoublyLinkedList().to_list(), [])
+
+    def test_to_list_reversed_kosong(self):
+        self.assertEqual(DoublyLinkedList().to_list_reversed(), [])
+
+
+# ══════════════════════════════════════════════════════════════
+#  TEST INTEGRASI — Skenario IoT
+# ══════════════════════════════════════════════════════════════
+
+class TestIntegrasi(unittest.TestCase):
+
+    def test_sll_sebagai_queue_alert(self):
         """
-        Sisipkan node baru di depan (head).
-        Big-O waktu: O(1).
-
-        Contoh:
-            list: [B -> C]
-            add_front(A)
-            list: [A -> B -> C]
+        SLL sebagai Queue: enqueue = add_back, dequeue = remove_front.
+        Urutan FIFO harus terjaga.
         """
-        node = SLLNode(data)
-        node.next = self.head
-        self.head = node
-        if self.tail is None:       # list sebelumnya kosong
-            self.tail = node
-        self._size += 1
+        queue = SinglyLinkedList()
+        queue.add_back("ALERT_HIGH_LATENCY")
+        queue.add_back("ALERT_PACKET_LOSS")
+        queue.add_back("ALERT_DOWN")
 
-    def add_back(self, data: Any) -> None:
+        self.assertEqual(queue.remove_front(), "ALERT_HIGH_LATENCY")
+        self.assertEqual(queue.remove_front(), "ALERT_PACKET_LOSS")
+        self.assertEqual(queue.remove_front(), "ALERT_DOWN")
+        self.assertTrue(queue.is_empty())
+
+    def test_sll_sebagai_stack_history(self):
         """
-        Sisipkan node baru di belakang (tail).
-        Big-O waktu: O(1) karena ada pointer tail.
-
-        Contoh:
-            list: [A -> B]
-            add_back(C)
-            list: [A -> B -> C]
+        SLL sebagai Stack: push = add_front, pop = remove_front.
+        Urutan LIFO harus terjaga.
         """
-        node = SLLNode(data)
-        if self.tail is None:       # list kosong
-            self.head = node
-            self.tail = node
-        else:
-            self.tail.next = node
-            self.tail = node
-        self._size += 1
+        stack = SinglyLinkedList()
+        stack.add_front("CMD_1")
+        stack.add_front("CMD_2")
+        stack.add_front("CMD_3")
 
-    def insert_after(self, target_data: Any, new_data: Any) -> bool:
+        self.assertEqual(stack.remove_front(), "CMD_3")
+        self.assertEqual(stack.remove_front(), "CMD_2")
+        self.assertEqual(stack.remove_front(), "CMD_1")
+
+    def test_dll_remove_back_o1_keunggulan(self):
         """
-        Sisipkan node baru setelah node dengan nilai target_data.
-        Big-O waktu: O(n) karena harus cari node target lebih dulu.
-        Kembalikan True jika berhasil, False jika target tidak ditemukan.
+        DLL remove_back harus O(1): tail.prev langsung tersedia,
+        tidak perlu traverse seperti SLL.
         """
-        current = self.head
-        while current is not None:
-            if current.data == target_data:
-                node = SLLNode(new_data)
-                node.next = current.next
-                current.next = node
-                if current == self.tail:    # target adalah tail
-                    self.tail = node
-                self._size += 1
-                return True
-            current = current.next
-        return False
+        dll = DoublyLinkedList()
+        for i in range(100):
+            dll.add_back(f"DEVICE_{i:03d}")
 
-    # ── Operasi Penghapusan ───────────────────────────────────────
+        # Remove dari belakang berulang kali — harus tetap O(1)
+        for i in range(99, -1, -1):
+            data = dll.remove_back()
+            self.assertEqual(data, f"DEVICE_{i:03d}")
 
-    def remove_front(self) -> Optional[Any]:
-        """
-        Hapus dan kembalikan data dari node terdepan (head).
-        Big-O waktu: O(1).
-        Kembalikan None jika list kosong.
+        self.assertTrue(dll.is_empty())
 
-        Contoh:
-            list: [A -> B -> C]
-            remove_front() -> A
-            list: [B -> C]
-        """
-        if self.head is None:
-            return None
-        data = self.head.data
-        self.head = self.head.next
-        if self.head is None:       # list menjadi kosong
-            self.tail = None
-        self._size -= 1
-        return data
+    def test_dll_delete_node_tengah_konsisten(self):
+        """Hapus node di tengah DLL tidak merusak pointer chain."""
+        dll = DoublyLinkedList()
+        for x in ["R1", "SW1", "PC1", "PC2", "R2"]:
+            dll.add_back(x)
 
-    def remove_back(self) -> Optional[Any]:
-        """
-        Hapus dan kembalikan data dari node terakhir (tail).
-        Big-O waktu: O(n) karena harus traverse untuk temukan node sebelum tail.
-        Kembalikan None jika list kosong.
+        # Hapus SW1 (tengah)
+        node_sw1 = dll.find("SW1")
+        dll.delete_node(node_sw1)
 
-        Analisis: Singly Linked List tidak punya pointer prev,
-        sehingga harus iterasi dari head untuk menemukan node sebelum tail.
-        Gunakan Doubly Linked List jika operasi ini sering dipanggil.
-        """
-        if self.head is None:
-            return None
-        data = self.tail.data
-        if self.head == self.tail:  # hanya satu elemen
-            self.head = None
-            self.tail = None
-        else:
-            current = self.head
-            while current.next != self.tail:
-                current = current.next
-            current.next = None
-            self.tail = current
-        self._size -= 1
-        return data
+        result = dll.to_list()
+        self.assertEqual(result, ["R1", "PC1", "PC2", "R2"])
 
-    def delete_by_value(self, data: Any) -> bool:
-        """
-        Hapus node pertama yang datanya sama dengan nilai yang dicari.
-        Big-O waktu: O(n).
-        Kembalikan True jika berhasil dihapus, False jika tidak ditemukan.
+        # Verifikasi pointer DLL tetap konsisten
+        node_r1  = dll.find("R1")
+        node_pc1 = dll.find("PC1")
+        self.assertEqual(node_r1.next.data,  "PC1")
+        self.assertEqual(node_pc1.prev.data, "R1")
 
-        Contoh:
-            list: [A -> B -> C -> B]
-            delete_by_value(B)  -> True
-            list: [A -> C -> B]  (hanya yang pertama dihapus)
-        """
-        if self.head is None:
-            return False
+    def test_sll_reverse_adjacency_list(self):
+        """SLL reverse berguna untuk membalik rute jaringan."""
+        rute = SinglyLinkedList()
+        for hop in ["R1", "SW1", "PC1"]:
+            rute.add_back(hop)
+        rute.reverse()
+        self.assertEqual(rute.to_list(), ["PC1", "SW1", "R1"])
 
-        # Kasus khusus: node yang dihapus adalah head
-        if self.head.data == data:
-            self.remove_front()
-            return True
-
-        current = self.head
-        while current.next is not None:
-            if current.next.data == data:
-                if current.next == self.tail:   # menghapus tail
-                    self.tail = current
-                current.next = current.next.next
-                self._size -= 1
-                return True
-            current = current.next
-        return False
-
-    # ── Operasi Pencarian ─────────────────────────────────────────
-
-    def find(self, data: Any) -> Optional[SLLNode]:
-        """
-        Cari dan kembalikan node pertama dengan data yang cocok.
-        Big-O waktu: O(n).
-        Kembalikan None jika tidak ditemukan.
-        """
-        current = self.head
-        while current is not None:
-            if current.data == data:
-                return current
-            current = current.next
-        return None
-
-    def contains(self, data: Any) -> bool:
-        """
-        Cek apakah nilai data ada dalam list.
-        Big-O waktu: O(n).
-        """
-        return self.find(data) is not None
-
-    def get_at(self, index: int) -> Optional[Any]:
-        """
-        Kembalikan data pada posisi index (0-based).
-        Big-O waktu: O(n).
-        Kembalikan None jika index di luar batas.
-        """
-        if index < 0 or index >= self._size:
-            return None
-        current = self.head
-        for _ in range(index):
-            current = current.next
-        return current.data
-
-    # ── Operasi Utilitas ──────────────────────────────────────────
-
-    def to_list(self) -> list:
-        """
-        Konversi Linked List ke Python list untuk keperluan debug/tampilan.
-        Big-O waktu: O(n).
-        """
-        result = []
-        current = self.head
-        while current is not None:
-            result.append(current.data)
-            current = current.next
-        return result
-
-    def clear(self) -> None:
-        """
-        Kosongkan seluruh list.
-        Big-O waktu: O(1) — hanya reset pointer.
-        """
-        self.head = None
-        self.tail = None
-        self._size = 0
-
-    def reverse(self) -> None:
-        """
-        Balikkan urutan list secara in-place.
-        Big-O waktu: O(n), Big-O ruang: O(1).
-
-        Contoh:
-            list: [A -> B -> C]
-            reverse()
-            list: [C -> B -> A]
-        """
-        prev = None
-        current = self.head
-        self.tail = self.head   # head lama menjadi tail baru
-        while current is not None:
-            next_node = current.next
-            current.next = prev
-            prev = current
-            current = next_node
-        self.head = prev
-
-    def __repr__(self) -> str:
-        items = self.to_list()
-        return " -> ".join(str(x) for x in items) + " -> NULL"
-
-    def __iter__(self):
-        """Memungkinkan iterasi dengan for loop. Big-O: O(n)."""
-        current = self.head
-        while current is not None:
-            yield current.data
-            current = current.next
+    def test_sll_insert_after_untuk_sisip_hop(self):
+        """insert_after berguna untuk menyisipkan hop baru di rute."""
+        rute = SinglyLinkedList()
+        for hop in ["R1", "R2", "SERVER"]:
+            rute.add_back(hop)
+        rute.insert_after("R1", "SW1")
+        self.assertEqual(rute.to_list(), ["R1", "SW1", "R2", "SERVER"])
 
 
-# ── Doubly Linked List ────────────────────────────────────────────
-
-class DoublyLinkedList:
-    """
-    Implementasi Doubly Linked List dari nol.
-    Lebih fleksibel dari SLL: mendukung traversal dua arah dan
-    remove_back O(1) karena ada pointer prev di setiap node.
-
-    Operasi utama:
-    - add_front   : O(1)
-    - add_back    : O(1)
-    - remove_front: O(1)
-    - remove_back : O(1)  <- keunggulan DLL vs SLL
-    - find        : O(n)
-    - delete_node : O(1)  <- jika sudah punya referensi node-nya
-    - size / is_empty: O(1)
-
-    Big-O ruang: O(n) untuk n elemen.
-    Overhead memori DLL vs SLL: tiap node DLL butuh 1 pointer extra (prev).
-    Untuk n=40 device x 20 alert = 800 node → overhead masih sangat kecil.
-    """
-
-    def __init__(self):
-        self.head: Optional[DLLNode] = None
-        self.tail: Optional[DLLNode] = None
-        self._size: int = 0
-
-    # ── Properti ─────────────────────────────────────────────────
-
-    def is_empty(self) -> bool:
-        """Big-O: O(1)."""
-        return self._size == 0
-
-    def __len__(self) -> int:
-        """Big-O: O(1)."""
-        return self._size
-
-    # ── Operasi Penyisipan ────────────────────────────────────────
-
-    def add_front(self, data: Any) -> None:
-        """
-        Sisipkan node baru di depan.
-        Big-O waktu: O(1).
-        """
-        node = DLLNode(data)
-        if self.head is None:
-            self.head = node
-            self.tail = node
-        else:
-            node.next = self.head
-            self.head.prev = node
-            self.head = node
-        self._size += 1
-
-    def add_back(self, data: Any) -> None:
-        """
-        Sisipkan node baru di belakang.
-        Big-O waktu: O(1) — keunggulan vs SLL karena ada pointer tail.
-        """
-        node = DLLNode(data)
-        if self.tail is None:
-            self.head = node
-            self.tail = node
-        else:
-            node.prev = self.tail
-            self.tail.next = node
-            self.tail = node
-        self._size += 1
-
-    # ── Operasi Penghapusan ───────────────────────────────────────
-
-    def remove_front(self) -> Optional[Any]:
-        """
-        Hapus dan kembalikan data dari depan.
-        Big-O waktu: O(1).
-        """
-        if self.head is None:
-            return None
-        data = self.head.data
-        if self.head == self.tail:  # satu elemen
-            self.head = None
-            self.tail = None
-        else:
-            self.head = self.head.next
-            self.head.prev = None
-        self._size -= 1
-        return data
-
-    def remove_back(self) -> Optional[Any]:
-        """
-        Hapus dan kembalikan data dari belakang.
-        Big-O waktu: O(1) — inilah keunggulan utama DLL vs SLL.
-        Pada SLL, operasi ini O(n) karena harus traverse dari head.
-        """
-        if self.tail is None:
-            return None
-        data = self.tail.data
-        if self.head == self.tail:  # satu elemen
-            self.head = None
-            self.tail = None
-        else:
-            self.tail = self.tail.prev
-            self.tail.next = None
-        self._size -= 1
-        return data
-
-    def delete_node(self, node: DLLNode) -> None:
-        """
-        Hapus node tertentu dari list (jika sudah punya referensi node-nya).
-        Big-O waktu: O(1) — tidak perlu traverse karena ada pointer prev & next.
-        """
-        if node == self.head:
-            self.remove_front()
-            return
-        if node == self.tail:
-            self.remove_back()
-            return
-        # Node di tengah: bypass node
-        node.prev.next = node.next
-        node.next.prev = node.prev
-        self._size -= 1
-
-    def delete_by_value(self, data: Any) -> bool:
-        """
-        Hapus node pertama dengan nilai data yang cocok.
-        Big-O waktu: O(n) untuk pencarian + O(1) untuk penghapusan.
-        """
-        current = self.head
-        while current is not None:
-            if current.data == data:
-                self.delete_node(current)
-                return True
-            current = current.next
-        return False
-
-    # ── Operasi Pencarian ─────────────────────────────────────────
-
-    def find(self, data: Any) -> Optional[DLLNode]:
-        """
-        Cari node dengan data yang cocok (pencarian maju dari head).
-        Big-O waktu: O(n).
-        """
-        current = self.head
-        while current is not None:
-            if current.data == data:
-                return current
-            current = current.next
-        return None
-
-    def contains(self, data: Any) -> bool:
-        """Cek apakah nilai ada dalam list. Big-O: O(n)."""
-        return self.find(data) is not None
-
-    def find_backward(self, data: Any) -> Optional[DLLNode]:
-        """
-        Cari node dengan pencarian mundur dari tail.
-        Berguna jika data yang dicari biasanya ada di dekat tail.
-        Big-O waktu: O(n).
-        """
-        current = self.tail
-        while current is not None:
-            if current.data == data:
-                return current
-            current = current.prev
-        return None
-
-    # ── Operasi Utilitas ──────────────────────────────────────────
-
-    def to_list(self) -> list:
-        """Konversi ke Python list (traversal maju). Big-O: O(n)."""
-        result = []
-        current = self.head
-        while current is not None:
-            result.append(current.data)
-            current = current.next
-        return result
-
-    def to_list_reversed(self) -> list:
-        """Konversi ke Python list (traversal mundur dari tail). Big-O: O(n)."""
-        result = []
-        current = self.tail
-        while current is not None:
-            result.append(current.data)
-            current = current.prev
-        return result
-
-    def clear(self) -> None:
-        """Kosongkan seluruh list. Big-O: O(1)."""
-        self.head = None
-        self.tail = None
-        self._size = 0
-
-    def __repr__(self) -> str:
-        items = self.to_list()
-        return "NULL <-> " + " <-> ".join(str(x) for x in items) + " <-> NULL"
-
-    def __iter__(self):
-        """Iterasi maju. Big-O: O(n)."""
-        current = self.head
-        while current is not None:
-            yield current.data
-            current = current.next
-
-
-# ================================================================
-# UNIT TEST — jalankan file ini langsung untuk verifikasi
-# python linked_list.py
-# ================================================================
+# ══════════════════════════════════════════════════════════════
+#  ENTRY POINT
+# ══════════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("Unit Test: SinglyLinkedList")
+    print("  TEST LINKED LIST — IoT Network Monitoring  Group 8")
     print("=" * 60)
-
-    sll = SinglyLinkedList()
-    assert sll.is_empty(), "GAGAL: seharusnya kosong"
-
-    # Test add_front & add_back
-    sll.add_front("SENSOR_1")
-    sll.add_front("GATEWAY_0")
-    sll.add_back("SERVER_1")
-    sll.add_back("SENSOR_2")
-    print(f"  Isi SLL      : {sll}")
-    assert len(sll) == 4, "GAGAL: size harus 4"
-    assert sll.get_at(0) == "GATEWAY_0", "GAGAL: index 0"
-    assert sll.get_at(3) == "SENSOR_2", "GAGAL: index 3"
-    print(f"  [OK] add_front, add_back, get_at")
-
-    # Test find & contains
-    node = sll.find("SERVER_1")
-    assert node is not None, "GAGAL: SERVER_1 harus ditemukan"
-    assert sll.contains("SENSOR_2"), "GAGAL: SENSOR_2 harus ada"
-    assert not sll.contains("SENSOR_99"), "GAGAL: SENSOR_99 tidak boleh ada"
-    print(f"  [OK] find, contains")
-
-    # Test remove_front & remove_back
-    removed = sll.remove_front()
-    assert removed == "GATEWAY_0", f"GAGAL: remove_front harus GATEWAY_0, dapat {removed}"
-    removed = sll.remove_back()
-    assert removed == "SENSOR_2", f"GAGAL: remove_back harus SENSOR_2, dapat {removed}"
-    print(f"  Setelah remove: {sll}")
-    print(f"  [OK] remove_front, remove_back")
-
-    # Test delete_by_value
-    sll.add_back("SENSOR_3")
-    sll.add_back("SENSOR_4")
-    result = sll.delete_by_value("SERVER_1")
-    assert result is True, "GAGAL: delete SERVER_1 harus True"
-    assert not sll.contains("SERVER_1"), "GAGAL: SERVER_1 masih ada"
-    result = sll.delete_by_value("TIDAK_ADA")
-    assert result is False, "GAGAL: delete nilai tidak ada harus False"
-    print(f"  [OK] delete_by_value")
-
-    # Test reverse
-    sll2 = SinglyLinkedList()
-    for x in [1, 2, 3, 4, 5]:
-        sll2.add_back(x)
-    sll2.reverse()
-    assert sll2.to_list() == [5, 4, 3, 2, 1], f"GAGAL: reverse, dapat {sll2.to_list()}"
-    print(f"  [OK] reverse")
-
-    # Test iterasi
-    total = sum(x for x in sll2)
-    assert total == 15, f"GAGAL: sum harus 15, dapat {total}"
-    print(f"  [OK] iterasi (__iter__)")
-
-    print()
-    print("=" * 60)
-    print("Unit Test: DoublyLinkedList")
-    print("=" * 60)
-
-    dll = DoublyLinkedList()
-    assert dll.is_empty(), "GAGAL: seharusnya kosong"
-
-    # Test add_front & add_back
-    dll.add_front("ALERT_2")
-    dll.add_front("ALERT_1")
-    dll.add_back("ALERT_3")
-    dll.add_back("ALERT_4")
-    print(f"  Isi DLL      : {dll}")
-    assert len(dll) == 4, "GAGAL: size harus 4"
-    print(f"  [OK] add_front, add_back")
-
-    # Test remove_back O(1) — keunggulan DLL
-    removed = dll.remove_back()
-    assert removed == "ALERT_4", f"GAGAL: remove_back harus ALERT_4, dapat {removed}"
-    removed = dll.remove_front()
-    assert removed == "ALERT_1", f"GAGAL: remove_front harus ALERT_1, dapat {removed}"
-    print(f"  Setelah remove: {dll}")
-    print(f"  [OK] remove_front, remove_back (O(1) keduanya)")
-
-    # Test traversal mundur
-    dll2 = DoublyLinkedList()
-    for x in ["A", "B", "C", "D"]:
-        dll2.add_back(x)
-    reversed_list = dll2.to_list_reversed()
-    assert reversed_list == ["D", "C", "B", "A"], f"GAGAL: reversed, dapat {reversed_list}"
-    print(f"  [OK] to_list_reversed (traversal mundur)")
-
-    # Test delete_node O(1) dengan referensi langsung
-    node_c = dll2.find("C")
-    assert node_c is not None, "GAGAL: node C harus ada"
-    dll2.delete_node(node_c)
-    assert not dll2.contains("C"), "GAGAL: C masih ada setelah delete_node"
-    print(f"  [OK] delete_node (O(1) dengan referensi node)")
-
-    # Test find_backward
-    dll2.add_back("E")
-    node_e = dll2.find_backward("E")
-    assert node_e is not None, "GAGAL: E tidak ditemukan dari backward"
-    print(f"  [OK] find_backward")
-
-    print()
-    print("=" * 60)
-    print("Perbandingan SLL vs DLL — Relevansi untuk Topik 4 IoT")
-    print("=" * 60)
-    print("""
-  Operasi          | SLL (SinglyLinkedList) | DLL (DoublyLinkedList)
-  -----------------|------------------------|------------------------
-  add_front        | O(1)                   | O(1)
-  add_back         | O(1)*                  | O(1)
-  remove_front     | O(1)                   | O(1)
-  remove_back      | O(n) ← harus traverse  | O(1) ← keunggulan DLL
-  delete (by ref)  | O(n)                   | O(1) ← keunggulan DLL
-  find             | O(n)                   | O(n)
-  Memori per node  | data + 1 pointer       | data + 2 pointer
-
-  Penggunaan dalam proyek ini:
-  - SLL → Stack (AlertStack), Queue (AlertPriorityQueue), adjacency list IoTGraph
-  - DLL → Tidak wajib di Topik 4, tetapi bisa dipakai jika perlu undo O(1) di tengah list
-  * O(1) dengan pointer tail
-    """)
-    print("Semua unit test LULUS ✓")
+    unittest.main(verbosity=2)
