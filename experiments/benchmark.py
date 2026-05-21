@@ -1,20 +1,18 @@
-# ==============================================================================
-# benchmark.py
-# Skrip Evaluasi Kinerja Kustom (Waktu Eksekusi & Kompleksitas Big-O)
-# Topik 4: IoT Network Monitoring & Alert Management System
-# ELT60213 Algoritma dan Struktur Data - TA 2025/2026
-# ==============================================================================
-
 import time
 import random
 import string
+import os             # <-- Tambahkan ini
+import sys            
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from dataclasses import dataclass
 
 # Mengimpor struktur data kustom buatan Anda
-from bst import BSTRegistry
-from queue_iot import AlertPriorityQueue
-from stack import AlertStack, Alert, Stack
-from graph import IoTGraph
+from src.data_structures.bst import BSTDeviceRegistry
+from src.data_structures.queue import AlertPriorityQueue
+from src.data_structures.stack import Alert, AlertStack
+from src.data_structures.graph import IoTGraph
 
 # ── Dataclass Dummy untuk Pengujian Perangkat ─────────────────────────────────
 @dataclass
@@ -41,20 +39,19 @@ def run_benchmark():
     # Ekspektasi: insert O(log n) rata-rata, search O(log n) rata-rata
     # ==========================================================================
     print(f"\n[1] Menguji BSTRegistry (Skala Data: {N} Devices)")
-    bst = BSTRegistry()
+    bst = BSTDeviceRegistry()
     
     # Membuat daftar objek device tiruan dengan ID unik secara acak
     devices_pool = [
-        DummyDevice(f"DEV_{generate_random_id()}", "SENSOR_SUHU", "ONLINE", time.time()) 
+        DummyDevice(f"DEV_{generate_random_id()}", "SENSOR_SUHU", "ONLINE", time.time())
         for _ in range(N)
     ]
-    
+
     # Mengukur performa operasi penambahan (Insert) ke BST
     start_time = time.perf_counter()
     for dev in devices_pool:
-        bst.insert(dev)
+        bst.insert(dev.device_id, dev.tipe, dev.status, dev.last_reading)
     waktu_insert_bst = time.perf_counter() - start_time
-    print(f"  └─ O(log n) Insert {N} devices       : {waktu_insert_bst:.6f} detik")
     
     # Mengukur performa pencarian acak (Search) pada pohon BST
     search_targets = random.sample(devices_pool, min(500, N))
@@ -150,7 +147,7 @@ def run_benchmark():
     # menggunakan implementasi kelas kustom Stack() Anda (bukan list python bawaan).
     def custom_dfs_reachable(graph_instance, source_node: str) -> set:
         visited_nodes = set()
-        dfs_stack = Stack()  # Menggunakan Stack buatan sendiri dari stack.py
+        dfs_stack = AlertStack()  # Menggunakan Stack buatan sendiri dari stack.py
         dfs_stack.push(source_node)
         
         while not dfs_stack.is_empty():
