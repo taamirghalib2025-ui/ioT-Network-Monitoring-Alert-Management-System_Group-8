@@ -1,302 +1,424 @@
 # ============================================================
-# stack.py
-# Modul: Stack berbasis Singly Linked List (LIFO)
+# test_stack.py
+# Unit Test: AlertStack & Stack
 # Topik 4: IoT Network Monitoring & Alert Management System
 # ELT60213 Algoritma dan Struktur Data - TA 2025/2026
 # ============================================================
 
-from __future__ import annotations
-from typing import Optional, List
-from dataclasses import dataclass
+import unittest
+import time
+from stack import Alert, AlertStack, Stack
 
 
-# ── Dataclass Alert (dipakai sebagai data di Stack) ──────────
-@dataclass
-class Alert:
-    """Representasi satu alert dari perangkat IoT."""
-    alert_id: int
-    device_id: str
-    tipe: int          # 1=CRITICAL, 2=WARNING, 3=INFO
-    pesan: str
-    timestamp: float
+def buat_alert(alert_id: int, tipe: int = 1, device_id: str = "SENSOR_0") -> Alert:
+    """Helper: buat Alert dummy untuk keperluan test."""
+    tipe_label = {1: "CRITICAL", 2: "WARNING", 3: "INFO"}
+    return Alert(
+        alert_id=alert_id,
+        device_id=device_id,
+        tipe=tipe,
+        pesan=f"Pesan {tipe_label.get(tipe, 'UNKNOWN')} #{alert_id}",
+        timestamp=time.time(),
+    )
 
 
-# ── Node Singly Linked List ───────────────────────────────────
-class LLNode:
-    """
-    Node tunggal untuk Singly Linked List.
-    Menyimpan satu data dan pointer ke node berikutnya.
-    """
-    def __init__(self, data=None):
-        self.data = data
-        self.next: Optional[LLNode] = None
+# ─────────────────────────────────────────────────────────────
+# Test Suite 1: AlertStack — Operasi Dasar
+# ─────────────────────────────────────────────────────────────
+class TestAlertStackDasar(unittest.TestCase):
+    """Menguji operasi push, pop, peek, is_empty, is_full, dan __len__."""
+
+    def setUp(self):
+        self.stk = AlertStack(kapasitas=5)
+
+    # ── Push & ukuran ─────────────────────────────────────────
+    def test_push_menambah_ukuran(self):
+        """Setiap push harus menambah _size sebesar 1."""
+        for i in range(1, 4):
+            self.stk.push(buat_alert(i))
+            self.assertEqual(len(self.stk), i)
+
+    def test_push_top_adalah_alert_terakhir(self):
+        """Alert yang terakhir di-push harus berada di puncak (LIFO)."""
+        for i in range(1, 4):
+            self.stk.push(buat_alert(i))
+        self.assertEqual(self.stk.peek().alert_id, 3)
+
+    # ── Pop ────────────────────────────────────────────────────
+    def test_pop_mengembalikan_alert_teratas(self):
+        """pop() harus mengembalikan alert teratas (LIFO)."""
+        self.stk.push(buat_alert(10))
+        self.stk.push(buat_alert(20))
+        hasil = self.stk.pop()
+        self.assertEqual(hasil.alert_id, 20)
+
+    def test_pop_mengurangi_ukuran(self):
+        """pop() harus mengurangi _size sebesar 1."""
+        self.stk.push(buat_alert(1))
+        self.stk.push(buat_alert(2))
+        self.stk.pop()
+        self.assertEqual(len(self.stk), 1)
+
+    def test_pop_urutan_lifo(self):
+        """Urutan pop harus kebalikan urutan push (LIFO)."""
+        ids_push = [1, 2, 3, 4, 5]
+        for i in ids_push:
+            self.stk.push(buat_alert(i))
+        ids_pop = [self.stk.pop().alert_id for _ in range(5)]
+        self.assertEqual(ids_pop, list(reversed(ids_push)))
+
+    def test_pop_stack_kosong_mengembalikan_none(self):
+        """pop() pada stack kosong harus mengembalikan None."""
+        self.assertIsNone(self.stk.pop())
+
+    # ── Peek ───────────────────────────────────────────────────
+    def test_peek_tidak_mengubah_ukuran(self):
+        """peek() tidak boleh mengubah ukuran stack."""
+        self.stk.push(buat_alert(1))
+        self.stk.push(buat_alert(2))
+        _ = self.stk.peek()
+        self.assertEqual(len(self.stk), 2)
+
+    def test_peek_mengembalikan_alert_teratas(self):
+        """peek() harus mengembalikan alert paling atas tanpa menghapus."""
+        self.stk.push(buat_alert(7))
+        self.stk.push(buat_alert(9))
+        self.assertEqual(self.stk.peek().alert_id, 9)
+        self.assertEqual(len(self.stk), 2)  # ukuran tetap
+
+    def test_peek_stack_kosong_mengembalikan_none(self):
+        """peek() pada stack kosong harus mengembalikan None."""
+        self.assertIsNone(self.stk.peek())
+
+    # ── is_empty / is_full ────────────────────────────────────
+    def test_is_empty_saat_baru_dibuat(self):
+        self.assertTrue(self.stk.is_empty())
+
+    def test_is_empty_setelah_push(self):
+        self.stk.push(buat_alert(1))
+        self.assertFalse(self.stk.is_empty())
+
+    def test_is_empty_setelah_pop_habis(self):
+        self.stk.push(buat_alert(1))
+        self.stk.pop()
+        self.assertTrue(self.stk.is_empty())
+
+    def test_is_full_saat_kapasitas_tercapai(self):
+        for i in range(1, 6):  # kapasitas = 5
+            self.stk.push(buat_alert(i))
+        self.assertTrue(self.stk.is_full())
+
+    def test_is_full_false_sebelum_kapasitas(self):
+        self.stk.push(buat_alert(1))
+        self.assertFalse(self.stk.is_full())
+
+    # ── __len__ ───────────────────────────────────────────────
+    def test_len_kosong(self):
+        self.assertEqual(len(self.stk), 0)
+
+    def test_len_setelah_beberapa_push(self):
+        for i in range(3):
+            self.stk.push(buat_alert(i))
+        self.assertEqual(len(self.stk), 3)
 
 
-# ── Stack berbasis Singly Linked List ─────────────────────────
-class AlertStack:
-    """
-    Stack LIFO berbasis Singly Linked List untuk riwayat alert per-device.
+# ─────────────────────────────────────────────────────────────
+# Test Suite 2: AlertStack — Auto-hapus Bottom (Overflow)
+# ─────────────────────────────────────────────────────────────
+class TestAlertStackOverflow(unittest.TestCase):
+    """Menguji perilaku saat stack melebihi kapasitas (hapus bottom)."""
 
-    Setiap device IoT memiliki satu AlertStack sendiri.
-    Maksimal menyimpan `kapasitas` alert terakhir (default=20).
-    Jika penuh, alert paling lama (paling bawah) otomatis dihapus
-    agar alert terbaru selalu bisa masuk.
+    def test_ukuran_tidak_melebihi_kapasitas(self):
+        """Ukuran tidak boleh pernah melebihi kapasitas."""
+        stk = AlertStack(kapasitas=3)
+        for i in range(1, 10):
+            stk.push(buat_alert(i))
+            self.assertLessEqual(len(stk), 3)
 
-    Kompleksitas:
-        push  : O(n) worst-case (hanya saat penuh, untuk hapus bottom)
-                O(1) kondisi normal
-        pop   : O(1)
-        peek  : O(1)
-        to_list: O(n)
-    Ruang: O(n) di mana n = kapasitas
-    """
+    def test_alert_terlama_terhapus_saat_penuh(self):
+        """Alert pertama (terlama) harus hilang setelah overflow."""
+        stk = AlertStack(kapasitas=3)
+        for i in range(1, 5):   # push 4 alert ke kapasitas 3
+            stk.push(buat_alert(i))
+        ids = [a.alert_id for a in stk.to_list()]
+        self.assertNotIn(1, ids,
+            "Alert#1 (terlama) seharusnya sudah terhapus")
 
-    def __init__(self, kapasitas: int = 20):
-        self.top: Optional[LLNode] = None
-        self._size: int = 0
-        self.kapasitas: int = kapasitas
+    def test_alert_terbaru_tetap_ada_setelah_overflow(self):
+        """Alert terbaru harus selalu ada di puncak setelah overflow."""
+        stk = AlertStack(kapasitas=3)
+        for i in range(1, 7):
+            stk.push(buat_alert(i))
+        self.assertEqual(stk.peek().alert_id, 6)
 
-    # ── Operasi utama ──────────────────────────────────────────
+    def test_isi_stack_setelah_overflow_berurut(self):
+        """Setelah overflow, isi stack harus berupa 3 alert terbaru."""
+        stk = AlertStack(kapasitas=3)
+        for i in range(1, 7):   # push alert 1–6
+            stk.push(buat_alert(i))
+        ids = [a.alert_id for a in stk.to_list()]
+        # top→bottom: 6, 5, 4
+        self.assertEqual(ids, [6, 5, 4])
 
-    def push(self, alert: Alert) -> None:
-        """
-        Masukkan alert baru ke puncak stack (LIFO).
+    def test_overflow_kapasitas_satu(self):
+        """Kapasitas 1: setiap push baru menggantikan alert sebelumnya."""
+        stk = AlertStack(kapasitas=1)
+        stk.push(buat_alert(100))
+        stk.push(buat_alert(200))
+        self.assertEqual(len(stk), 1)
+        self.assertEqual(stk.peek().alert_id, 200)
 
-        Jika stack sudah penuh (size == kapasitas), elemen paling
-        bawah (alert paling lama) dihapus terlebih dahulu agar
-        jumlah node tetap <= kapasitas.
-
-        Big-O waktu : O(1) normal | O(n) saat penuh (hapus bottom)
-        Big-O ruang : O(1) tambahan per operasi
-        """
-        if self._size >= self.kapasitas:
-            self._hapus_bottom()  # hapus alert terlama → O(n)
-
-        # Buat node baru dan taruh di puncak → O(1)
-        node = LLNode(alert)
-        node.next = self.top
-        self.top = node
-        self._size += 1
-
-    def pop(self) -> Optional[Alert]:
-        """
-        Ambil dan hapus alert dari puncak stack (LIFO).
-
-        Mengembalikan None jika stack kosong.
-
-        Big-O waktu : O(1)
-        Big-O ruang : O(1)
-        """
-        if self.is_empty():
-            return None
-
-        data = self.top.data
-        self.top = self.top.next
-        self._size -= 1
-        return data
-
-    def peek(self) -> Optional[Alert]:
-        """
-        Lihat alert paling atas tanpa menghapusnya.
-
-        Big-O waktu : O(1)
-        """
-        if self.is_empty():
-            return None
-        return self.top.data
-
-    # ── Operasi bantu ──────────────────────────────────────────
-
-    def is_empty(self) -> bool:
-        """Kembalikan True jika stack kosong. Big-O: O(1)."""
-        return self._size == 0
-
-    def is_full(self) -> bool:
-        """Kembalikan True jika stack sudah penuh. Big-O: O(1)."""
-        return self._size >= self.kapasitas
-
-    def to_list(self) -> List[Alert]:
-        """
-        Kembalikan semua alert sebagai list dari top ke bottom
-        (alert terbaru di indeks 0, terlama di indeks terakhir).
-
-        Big-O waktu : O(n)
-        Big-O ruang : O(n)
-        """
-        result: List[Alert] = []
-        current = self.top
-        while current is not None:
-            result.append(current.data)
-            current = current.next
-        return result
-
-    def clear(self) -> None:
-        """
-        Kosongkan seluruh stack.
-        Big-O waktu : O(1) — cukup reset pointer dan counter.
-        """
-        self.top = None
-        self._size = 0
-
-    def __len__(self) -> int:
-        """Kembalikan jumlah elemen saat ini. Big-O: O(1)."""
-        return self._size
-
-    def __repr__(self) -> str:
-        alerts = self.to_list()
-        ids = [f"Alert#{a.alert_id}({['','CRITICAL','WARNING','INFO'][a.tipe]})"
-               for a in alerts]
-        return f"AlertStack(size={self._size}/{self.kapasitas}, top→[{', '.join(ids)}])"
-
-    # ── Operasi internal ───────────────────────────────────────
-
-    def _hapus_bottom(self) -> None:
-        """
-        Hapus node paling bawah (alert paling lama).
-        Dipanggil secara internal saat stack penuh.
-
-        Big-O waktu : O(n) — harus traverse ke node sebelum bottom.
-        Big-O ruang : O(1)
-        """
-        if self._size == 0:
-            return
-
-        # Hanya 1 elemen
-        if self._size == 1:
-            self.top = None
-            self._size = 0
-            return
-
-        # Traverse ke node sebelum yang terakhir
-        current = self.top
-        while current.next is not None and current.next.next is not None:
-            current = current.next
-
-        # current.next adalah node terakhir → putus linknya
-        current.next = None
-        self._size -= 1
+    def test_overflow_banyak_push(self):
+        """50 push ke kapasitas 5 → hanya 5 alert terbaru yang tersisa."""
+        stk = AlertStack(kapasitas=5)
+        for i in range(1, 51):
+            stk.push(buat_alert(i))
+        self.assertEqual(len(stk), 5)
+        ids = [a.alert_id for a in stk.to_list()]
+        self.assertEqual(ids, [50, 49, 48, 47, 46])
 
 
-# ── Stack Umum untuk keperluan DFS (Graph Traversal) ─────────
-class Stack:
-    """
-    Stack LIFO serbaguna berbasis Singly Linked List.
-    Digunakan untuk: DFS traversal graph, log siklus, dll.
+# ─────────────────────────────────────────────────────────────
+# Test Suite 3: AlertStack — to_list & clear
+# ─────────────────────────────────────────────────────────────
+class TestAlertStackToListClear(unittest.TestCase):
+    """Menguji to_list() dan clear()."""
 
-    Kompleksitas:
-        push / pop / peek : O(1)
-        Ruang             : O(n)
-    """
+    def setUp(self):
+        self.stk = AlertStack(kapasitas=5)
+        for i in range(1, 5):
+            self.stk.push(buat_alert(i))
 
-    def __init__(self):
-        self.top: Optional[LLNode] = None
-        self._size: int = 0
+    def test_to_list_urutan_top_ke_bottom(self):
+        """to_list() harus mengembalikan alert dari top ke bottom."""
+        ids = [a.alert_id for a in self.stk.to_list()]
+        self.assertEqual(ids, [4, 3, 2, 1])
 
-    def push(self, data) -> None:
-        """
-        Masukkan data ke puncak stack.
-        Big-O waktu: O(1)
-        """
-        node = LLNode(data)
-        node.next = self.top
-        self.top = node
-        self._size += 1
+    def test_to_list_panjang_sama_dengan_size(self):
+        """Panjang list hasil to_list() harus sama dengan len(stk)."""
+        self.assertEqual(len(self.stk.to_list()), len(self.stk))
 
-    def pop(self):
-        """
-        Ambil dan hapus data dari puncak stack.
-        Kembalikan None jika kosong.
-        Big-O waktu: O(1)
-        """
-        if self.is_empty():
-            return None
-        data = self.top.data
-        self.top = self.top.next
-        self._size -= 1
-        return data
+    def test_to_list_stack_kosong(self):
+        """to_list() pada stack kosong harus mengembalikan list kosong."""
+        empty = AlertStack()
+        self.assertEqual(empty.to_list(), [])
 
-    def peek(self):
-        """
-        Lihat data puncak tanpa menghapus.
-        Big-O waktu: O(1)
-        """
-        return self.top.data if self.top else None
+    def test_to_list_tidak_mengubah_stack(self):
+        """to_list() tidak boleh mengubah isi atau ukuran stack."""
+        size_before = len(self.stk)
+        top_before = self.stk.peek().alert_id
+        self.stk.to_list()
+        self.assertEqual(len(self.stk), size_before)
+        self.assertEqual(self.stk.peek().alert_id, top_before)
 
-    def is_empty(self) -> bool:
-        """Big-O: O(1)."""
-        return self._size == 0
+    def test_clear_mengosongkan_stack(self):
+        """clear() harus membuat stack kosong dan size = 0."""
+        self.stk.clear()
+        self.assertTrue(self.stk.is_empty())
+        self.assertEqual(len(self.stk), 0)
 
-    def __len__(self) -> int:
-        return self._size
-
-    def __repr__(self) -> str:
-        return f"Stack(size={self._size}, top={self.peek()})"
+    def test_clear_lalu_push_bisa_berjalan(self):
+        """Setelah clear(), stack harus bisa menerima push baru."""
+        self.stk.clear()
+        self.stk.push(buat_alert(99))
+        self.assertEqual(len(self.stk), 1)
+        self.assertEqual(self.stk.peek().alert_id, 99)
 
 
-# ── Unit Test Mandiri ──────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
+# Test Suite 4: AlertStack — Tipe Alert & Data Integrity
+# ─────────────────────────────────────────────────────────────
+class TestAlertStackDataIntegrity(unittest.TestCase):
+    """Memastikan data Alert tersimpan dan terbaca dengan benar."""
+
+    def test_data_alert_tidak_berubah_setelah_push_pop(self):
+        """Semua atribut Alert harus identik setelah push → pop."""
+        stk = AlertStack()
+        original = Alert(
+            alert_id=42,
+            device_id="GATEWAY_7",
+            tipe=2,
+            pesan="Tegangan tidak stabil",
+            timestamp=1_700_000_000.0,
+        )
+        stk.push(original)
+        hasil = stk.pop()
+        self.assertEqual(hasil.alert_id, 42)
+        self.assertEqual(hasil.device_id, "GATEWAY_7")
+        self.assertEqual(hasil.tipe, 2)
+        self.assertEqual(hasil.pesan, "Tegangan tidak stabil")
+        self.assertAlmostEqual(hasil.timestamp, 1_700_000_000.0)
+
+    def test_push_tipe_critical(self):
+        stk = AlertStack()
+        stk.push(buat_alert(1, tipe=1))
+        self.assertEqual(stk.peek().tipe, 1)
+
+    def test_push_tipe_warning(self):
+        stk = AlertStack()
+        stk.push(buat_alert(2, tipe=2))
+        self.assertEqual(stk.peek().tipe, 2)
+
+    def test_push_tipe_info(self):
+        stk = AlertStack()
+        stk.push(buat_alert(3, tipe=3))
+        self.assertEqual(stk.peek().tipe, 3)
+
+    def test_beberapa_device_independen(self):
+        """Stack berbeda untuk device berbeda tidak saling mempengaruhi."""
+        stk_a = AlertStack(kapasitas=5)
+        stk_b = AlertStack(kapasitas=5)
+        stk_a.push(buat_alert(1, device_id="DEV_A"))
+        stk_b.push(buat_alert(2, device_id="DEV_B"))
+        self.assertEqual(stk_a.peek().device_id, "DEV_A")
+        self.assertEqual(stk_b.peek().device_id, "DEV_B")
+        self.assertEqual(len(stk_a), 1)
+        self.assertEqual(len(stk_b), 1)
+
+
+# ─────────────────────────────────────────────────────────────
+# Test Suite 5: Stack Umum (untuk DFS)
+# ─────────────────────────────────────────────────────────────
+class TestStackUmum(unittest.TestCase):
+    """Menguji Stack serbaguna yang dipakai untuk DFS traversal."""
+
+    def setUp(self):
+        self.s = Stack()
+
+    def test_push_dan_len(self):
+        self.s.push("A")
+        self.s.push("B")
+        self.assertEqual(len(self.s), 2)
+
+    def test_pop_urutan_lifo(self):
+        nodes = ["GATEWAY_0", "SERVER_1", "SENSOR_5", "SENSOR_12"]
+        for n in nodes:
+            self.s.push(n)
+        popped = [self.s.pop() for _ in range(4)]
+        self.assertEqual(popped, list(reversed(nodes)))
+
+    def test_pop_kosong_mengembalikan_none(self):
+        self.assertIsNone(self.s.pop())
+
+    def test_peek_tidak_menghapus(self):
+        self.s.push("X")
+        self.s.push("Y")
+        self.assertEqual(self.s.peek(), "Y")
+        self.assertEqual(len(self.s), 2)
+
+    def test_peek_kosong_mengembalikan_none(self):
+        self.assertIsNone(self.s.peek())
+
+    def test_is_empty_awal(self):
+        self.assertTrue(self.s.is_empty())
+
+    def test_is_empty_setelah_push(self):
+        self.s.push(1)
+        self.assertFalse(self.s.is_empty())
+
+    def test_push_berbagai_tipe_data(self):
+        """Stack umum harus bisa menyimpan berbagai tipe data."""
+        self.s.push(42)
+        self.s.push("string")
+        self.s.push([1, 2, 3])
+        self.s.push({"key": "val"})
+        self.assertEqual(len(self.s), 4)
+        self.assertEqual(self.s.pop(), {"key": "val"})
+
+    def test_simulasi_dfs_traversal(self):
+        """Simulasi DFS: push tetangga, pop untuk kunjungi node."""
+        visited = []
+        self.s.push("A")
+        # A → B, C | B → D
+        graph = {
+            "A": ["B", "C"],
+            "B": ["D"],
+            "C": [],
+            "D": [],
+        }
+        visited_set = set()
+        while not self.s.is_empty():
+            node = self.s.pop()
+            if node in visited_set:
+                continue
+            visited_set.add(node)
+            visited.append(node)
+            for neighbor in reversed(graph.get(node, [])):
+                self.s.push(neighbor)
+
+        # Semua node harus dikunjungi
+        self.assertCountEqual(visited, ["A", "B", "C", "D"])
+        # Tidak ada duplikasi
+        self.assertEqual(len(visited), len(set(visited)))
+
+
+# ─────────────────────────────────────────────────────────────
+# Test Suite 6: Edge Case & Batas
+# ─────────────────────────────────────────────────────────────
+class TestEdgeCase(unittest.TestCase):
+    """Kasus batas dan skenario tidak biasa."""
+
+    def test_alert_stack_kapasitas_default_20(self):
+        stk = AlertStack()
+        self.assertEqual(stk.kapasitas, 20)
+
+    def test_push_tepat_kapasitas_tidak_hapus(self):
+        """Push sejumlah kapasitas (bukan lebih) → tidak ada yang terhapus."""
+        stk = AlertStack(kapasitas=4)
+        for i in range(1, 5):
+            stk.push(buat_alert(i))
+        ids = [a.alert_id for a in stk.to_list()]
+        self.assertEqual(sorted(ids), [1, 2, 3, 4])
+
+    def test_push_tepat_satu_lebih_kapasitas(self):
+        """Push kapasitas + 1 → alert pertama hilang."""
+        stk = AlertStack(kapasitas=4)
+        for i in range(1, 6):
+            stk.push(buat_alert(i))
+        ids = [a.alert_id for a in stk.to_list()]
+        self.assertNotIn(1, ids)
+        self.assertEqual(len(stk), 4)
+
+    def test_pop_semua_lalu_push_lagi(self):
+        """Pop habis lalu push lagi harus berjalan normal."""
+        stk = AlertStack(kapasitas=3)
+        for i in range(1, 4):
+            stk.push(buat_alert(i))
+        for _ in range(3):
+            stk.pop()
+        self.assertTrue(stk.is_empty())
+        stk.push(buat_alert(99))
+        self.assertEqual(stk.peek().alert_id, 99)
+        self.assertEqual(len(stk), 1)
+
+    def test_hapus_bottom_satu_elemen(self):
+        """_hapus_bottom pada stack dengan 1 node → stack kosong."""
+        stk = AlertStack(kapasitas=1)
+        stk.push(buat_alert(1))   # penuh
+        stk.push(buat_alert(2))   # trigger _hapus_bottom → hapus #1
+        self.assertEqual(len(stk), 1)
+        self.assertEqual(stk.peek().alert_id, 2)
+
+    def test_repr_alert_stack(self):
+        """__repr__ harus mengembalikan string yang mengandung info size."""
+        stk = AlertStack(kapasitas=5)
+        stk.push(buat_alert(1, tipe=1))
+        r = repr(stk)
+        self.assertIn("AlertStack", r)
+        self.assertIn("1/5", r)
+        self.assertIn("CRITICAL", r)
+
+    def test_repr_stack_umum(self):
+        """__repr__ Stack harus mengembalikan string deskriptif."""
+        s = Stack()
+        s.push("NODE_X")
+        r = repr(s)
+        self.assertIn("Stack", r)
+        self.assertIn("NODE_X", r)
+
+
+# ─────────────────────────────────────────────────────────────
+# Entry point
+# ─────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    import time
-
-    print("=" * 55)
-    print("  Unit Test: AlertStack & Stack")
-    print("  Topik 4 - IoT Network Monitoring")
-    print("=" * 55)
-
-    # ── Test 1: AlertStack dasar ───────────────────────────────
-    print("\n[TEST 1] Push & Pop AlertStack (kapasitas=5)")
-    stk = AlertStack(kapasitas=5)
-
-    alerts_dummy = [
-        Alert(i, f"SENSOR_{i}", (i % 3) + 1, f"Pesan alert {i}", time.time())
-        for i in range(1, 6)
-    ]
-
-    for a in alerts_dummy:
-        stk.push(a)
-        print(f"  push Alert#{a.alert_id} ({['','CRITICAL','WARNING','INFO'][a.tipe]}) "
-              f"→ size={len(stk)}")
-
-    print(f"\n  Stack saat ini: {stk}")
-    print(f"  peek() → Alert#{stk.peek().alert_id}")
-
-    popped = stk.pop()
-    print(f"  pop()  → Alert#{popped.alert_id} | size sekarang={len(stk)}")
-
-    # ── Test 2: Auto-hapus bottom saat penuh ──────────────────
-    print("\n[TEST 2] Auto-hapus bottom saat melebihi kapasitas")
-    stk2 = AlertStack(kapasitas=3)
-    for i in range(1, 7):
-        a = Alert(i, "GATEWAY_0", 1, f"Overflow test {i}", time.time())
-        stk2.push(a)
-        ids = [x.alert_id for x in stk2.to_list()]
-        print(f"  push Alert#{i} → isi stack (top→bottom): {ids}")
-
-    print(f"\n  Stack akhir: {stk2}")
-
-    # ── Test 3: to_list() ──────────────────────────────────────
-    print("\n[TEST 3] to_list() — urutan top ke bottom")
-    items = stk2.to_list()
-    for idx, a in enumerate(items):
-        print(f"  [{idx}] Alert#{a.alert_id} - {['','CRITICAL','WARNING','INFO'][a.tipe]}"
-              f" - {a.pesan}")
-
-    # ── Test 4: Stack umum untuk DFS ──────────────────────────
-    print("\n[TEST 4] Stack umum (untuk DFS traversal)")
-    s = Stack()
-    for node_id in ["GATEWAY_0", "SERVER_1", "SENSOR_5", "SENSOR_12"]:
-        s.push(node_id)
-        print(f"  push '{node_id}' → size={len(s)}")
-
-    print()
-    while not s.is_empty():
-        print(f"  pop → '{s.pop()}'")
-
-    # ── Test 5: Stack kosong ───────────────────────────────────
-    print("\n[TEST 5] Operasi pada stack kosong")
-    empty = AlertStack()
-    print(f"  is_empty()={empty.is_empty()}")
-    print(f"  pop()     ={empty.pop()}")
-    print(f"  peek()    ={empty.peek()}")
-
-    print("\n✅ Semua test selesai tanpa error.")
-    print("=" * 55)
+    unittest.main(verbosity=2)
