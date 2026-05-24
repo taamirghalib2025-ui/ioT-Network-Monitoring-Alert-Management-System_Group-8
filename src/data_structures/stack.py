@@ -1,5 +1,3 @@
-<<<<<<< HEAD
-=======
 """
 stack.py — Modul 4: Alert Stack & DFS Stack
 Struktur: Singly Linked List (LIFO)
@@ -85,4 +83,3 @@ class Stack:
 
     def __len__(self) -> int:
         return self.size
->>>>>>> b639c124380ee13dd4b4ed5bdac21aa762b7bab2
