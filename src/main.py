@@ -92,4 +92,8 @@ def main():
     modul_6.run_cli(graph, alert_queue, bst_reg, device_stacks)
 
 if __name__ == '__main__':
+<<<<<<< HEAD
     main()
+=======
+    main()
+>>>>>>> dev
