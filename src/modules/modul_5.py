@@ -1,6 +1,4 @@
-<<<<<<< HEAD
 
-=======
 """
 modul_5.py — Modul 5: Routing Optimal & Audit Latensi
 Menggunakan Dijkstra untuk mencari rute minimum, mencari bottleneck pada SPT,
@@ -148,4 +146,3 @@ def run_audit_latensi(graph: IoTGraph, distances: dict) -> None:
 
     print("=" * 60)
     print("-> Kompleksitas Waktu: Big-O: O(V^2) - Selection Sort pada Linked List\n")
->>>>>>> b639c124380ee13dd4b4ed5bdac21aa762b7bab2
