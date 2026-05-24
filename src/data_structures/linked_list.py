@@ -1,5 +1,3 @@
-<<<<<<< HEAD
-=======
 from typing import Optional, Any
 
 # ── 1. Node untuk Queue dan Stack ─────────────────────────────────────────────
@@ -29,4 +27,3 @@ class EdgeNode:
 
     def __repr__(self):
         return f"EdgeNode(dest='{self.dest}', latensi={self.latensi}ms)"
->>>>>>> b639c124380ee13dd4b4ed5bdac21aa762b7bab2
