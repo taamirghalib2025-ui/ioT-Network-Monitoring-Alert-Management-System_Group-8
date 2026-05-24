@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-
-=======
 """
 modul_4.py — Modul 4: Stack Alert History
 Bertindak sebagai service layer untuk menyimpan dan menampilkan
@@ -88,4 +85,3 @@ def run_rollback_status(stack: AlertStack, device_id: str, registry=None) -> Non
         print(f"[ERROR] Rollback gagal. Riwayat alert pada '{device_id}' kosong.")
         
     print("-> Kompleksitas Waktu: Big-O: O(1) (Operasi Stack)\n")
->>>>>>> b639c124380ee13dd4b4ed5bdac21aa762b7bab2
