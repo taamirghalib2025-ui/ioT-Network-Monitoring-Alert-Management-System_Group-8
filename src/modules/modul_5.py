@@ -1,237 +1,147 @@
-import numpy as np
-import random
-from dataclasses import dataclass, field
-from typing import Optional, Dict, List, Tuple
+"""
+modul_5.py — Modul 5: Routing Optimal & Audit Latensi
+Menggunakan Dijkstra untuk mencari rute minimum, mencari bottleneck pada SPT,
+dan mengaudit perangkat dengan Selection Sort berbasis Linked List.
+"""
 
-# — Seed tetap ————————————————————————————
-np.random.seed(23)
-random.seed(23)
+import heapq
+from data_structures.graph import IoTGraph
+from data_structures.linked_list import LLNode  # Menggunakan LLNode buatan sendiri
 
-DEVICE_TYPES = ['SENSOR', 'GATEWAY', 'SERVER']
-ALERT_TYPES  = {'CRITICAL': 1, 'WARNING': 2, 'INFO': 3}
-
-
-# — Dataclass ————————————————————————————
-@dataclass
-class Device:
-    device_id: str
-    tipe: str               # SENSOR / GATEWAY / SERVER
-    status: str  = 'ONLINE'
-    last_reading: float = 0.0
-
-
-@dataclass
-class Alert:
-    alert_id: int
-    device_id: str
-    tipe: int               # 1=CRITICAL, 2=WARNING, 3=INFO
-    pesan: str
-
-
-# — Node Linked List (general) ————————————————————
-class Node:
-    def __init__(self, data):
-        self.data = data
-        self.next: Optional['Node'] = None
-
-
-# ═══════════════════════════════════════════════════════════
-#  MODUL 5 — Routing Optimal & Audit
-# ═══════════════════════════════════════════════════════════
-
-class RoutingOptimal:
+def run_routing_optimal(graph: IoTGraph, start_node: str = 'GATEWAY_0'):
     """
-    Dijkstra untuk mencari rute latensi minimum dari GATEWAY_0
-    ke setiap perangkat.
-    Big-O: O(V²) dengan adjacency list sederhana.
+    Mencari rute latensi minimum dari start_node ke semua perangkat (Dijkstra)
+    dan mengidentifikasi 'bottleneck link' pada Shortest Path Tree (SPT).
+    Spesifikasi: Big-O: O((V+E) log V)
     """
+    print("=" * 60)
+    print(f"ROUTING OPTIMAL (DIJKSTRA) DARI: {start_node}")
+    print("=" * 60)
 
-    def __init__(self):
-        # graph: {node_id: [(tetangga, bobot), ...]}
-        self.graph: Dict[str, List[Tuple[str, float]]] = {}
+    if start_node not in graph.adj:
+        print(f"[ERROR] Node awal '{start_node}' tidak ditemukan di topologi.")
+        return None
 
-    # ── Tambah edge ──────────────────────────────────────
-    def add_edge(self, u: str, v: str, bobot: float) -> None:
-        """Tambahkan edge dua-arah ke graph."""
-        if u not in self.graph:
-            self.graph[u] = []
-        if v not in self.graph:
-            self.graph[v] = []
-        self.graph[u].append((v, bobot))
-        self.graph[v].append((u, bobot))
+    distances = {node: float('infinity') for node in graph.adj}
+    distances[start_node] = 0
+    previous = {node: None for node in graph.adj}
+    
+    # Mencatat bobot edge yang membawa ke node tersebut dalam SPT
+    spt_edge_weights = {} 
+    
+    # Priority Queue: (jarak_kumulatif, current_node)
+    pq = [(0, start_node)]
+    
+    while pq:
+        current_dist, current_node = heapq.heappop(pq)
+        
+        if current_dist > distances[current_node]:
+            continue
+            
+        for neighbor, latensi in graph.neighbors(current_node):
+            jarak_baru = current_dist + latensi
+            
+            if jarak_baru < distances[neighbor]:
+                distances[neighbor] = jarak_baru
+                previous[neighbor] = current_node
+                spt_edge_weights[neighbor] = latensi  # Catat bobot edge SPT
+                heapq.heappush(pq, (jarak_baru, neighbor))
 
-    # ── Dijkstra ─────────────────────────────────────────
-    def dijkstra(self, sumber: str) -> Tuple[Dict[str, float], Dict[str, Optional[str]]]:
-        """
-        Jalankan Dijkstra dari node sumber.
-        Return (jarak, prev) agar path bisa direkonstruksi.
-        """
-        INF = float('inf')
-        dist: Dict[str, float] = {n: INF for n in self.graph}
-        prev: Dict[str, Optional[str]] = {n: None for n in self.graph}
-
-        if sumber not in dist:
-            print(f"[ROUTING] Node '{sumber}' tidak ditemukan di graph.")
-            return dist, prev
-
-        dist[sumber] = 0.0
-        belum_diproses = set(self.graph.keys())
-
-        while belum_diproses:
-            # Pilih node dengan jarak terkecil (Selection Sort mini)
-            u = min(belum_diproses, key=lambda n: dist[n])
-            if dist[u] == INF:
-                break
-            belum_diproses.remove(u)
-
-            for (v, bobot) in self.graph.get(u, []):
-                alt = dist[u] + bobot
-                if alt < dist[v]:
-                    dist[v] = alt
-                    prev[v] = u
-
-        return dist, prev
-
-    # ── Rekonstruksi jalur ────────────────────────────────
-    def get_path(self, prev: Dict[str, Optional[str]],
-                 tujuan: str) -> List[str]:
-        """Kembalikan daftar node dari sumber ke tujuan."""
-        jalur: List[str] = []
-        node: Optional[str] = tujuan
-        while node is not None:
-            jalur.append(node)
-            node = prev.get(node)
-        jalur.reverse()
-        return jalur
-
-    # ── Identifikasi bottleneck ───────────────────────────
-    def bottleneck_link(self, sumber: str) -> Optional[Tuple[str, str, float]]:
-        """
-        Cari edge dengan latensi tertinggi pada shortest-path tree
-        (edge yang paling sering menjadi 'bottleneck').
-        """
-        dist, prev = self.dijkstra(sumber)
-        max_bobot: float = -1.0
-        bottleneck: Optional[Tuple[str, str, float]] = None
-
-        for node, induk in prev.items():
-            if induk is None:
-                continue
-            # Cari bobot edge (induk → node)
-            for (v, w) in self.graph.get(induk, []):
-                if v == node and w > max_bobot:
-                    max_bobot = w
-                    bottleneck = (induk, node, w)
-        return bottleneck
-
-    # ── Audit latensi dengan Selection Sort ───────────────
-    def audit_latensi(self, sumber: str = 'GATEWAY_0') -> List[Tuple[str, float]]:
-        """
-        Urutkan semua perangkat berdasarkan latensi ke sumber
-        menggunakan Selection Sort.
-        Big-O: O(V²) — sesuai spesifikasi.
-        """
-        dist, _ = self.dijkstra(sumber)
-
-        # Buat list (device, latensi) lalu Selection Sort
-        items: List[Tuple[str, float]] = [
-            (d, v) for d, v in dist.items() if v < float('inf')
-        ]
-
-        n = len(items)
-        for i in range(n):
-            min_idx = i
-            for j in range(i + 1, n):
-                if items[j][1] < items[min_idx][1]:
-                    min_idx = j
-            items[i], items[min_idx] = items[min_idx], items[i]
-
-        return items
-
-    # ── ROUTING <device> ──────────────────────────────────
-    def routing(self, tujuan: str,
-                sumber: str = 'GATEWAY_0') -> None:
-        """
-        Tampilkan rute terpendek dari sumber ke tujuan
-        beserta total latensi. Big-O: O(V+E).
-        """
-        dist, prev = self.dijkstra(sumber)
-
-        if tujuan not in dist or dist[tujuan] == float('inf'):
-            print(f"[ROUTING] Tidak ada rute dari {sumber} ke {tujuan}.")
-            return
-
-        jalur = self.get_path(prev, tujuan)
-        print(f"\n[ROUTING] {sumber} → {tujuan}")
-        print(f"  Jalur   : {' → '.join(jalur)}")
-        print(f"  Latensi : {dist[tujuan]:.1f} ms")
-
-    # ── AUDIT_LATENSI ─────────────────────────────────────
-    def tampilkan_audit(self, sumber: str = 'GATEWAY_0') -> None:
-        """
-        Tampilkan daftar perangkat terurut dari latensi terendah
-        ke tertinggi (Selection Sort).
-        """
-        hasil = self.audit_latensi(sumber)
-        print(f"\n[AUDIT_LATENSI] Urutan perangkat dari {sumber}:")
-        for rank, (device, latensi) in enumerate(hasil, 1):
-            print(f"  {rank:2}. {device:<20} {latensi:6.1f} ms")
-
-    # ── LAPORAN_JARINGAN ──────────────────────────────────
-    def laporan_jaringan(self, sumber: str = 'GATEWAY_0') -> None:
-        """
-        Tampilkan laporan lengkap: rute terpendek semua node,
-        bottleneck link, dan audit latensi.
-        """
-        dist, prev = self.dijkstra(sumber)
-        print(f"\n{'='*50}")
-        print(f"  LAPORAN JARINGAN — Sumber: {sumber}")
-        print(f"{'='*50}")
-
-        # Rute terpendek tiap perangkat
-        print("\n[Rute Terpendek]")
-        for tujuan in sorted(dist):
-            if tujuan == sumber:
-                continue
-            if dist[tujuan] == float('inf'):
-                print(f"  {tujuan:<20} TIDAK TERJANGKAU")
-            else:
-                jalur = self.get_path(prev, tujuan)
-                print(f"  {tujuan:<20} {dist[tujuan]:6.1f} ms  |  {' → '.join(jalur)}")
-
-        # Bottleneck
-        bn = self.bottleneck_link(sumber)
-        print("\n[Bottleneck Link]")
-        if bn:
-            print(f"  {bn[0]} ↔ {bn[1]}  ({bn[2]:.1f} ms)")
+    # 1. Cetak Rute Terpendek
+    for node in sorted(graph.adj.keys()):
+        if node == start_node:
+            continue
+        if distances[node] == float('infinity'):
+            print(f"  -> {node}: [TIDAK TERJANGKAU]")
         else:
-            print("  Tidak ada.")
+            path = []
+            curr = node
+            while curr:
+                path.append(curr)
+                curr = previous[curr]
+            path.reverse()
+            print(f"  -> {node}: {distances[node]} ms | Rute: {' -> '.join(path)}")
 
-        # Audit latensi
-        self.tampilkan_audit(sumber)
-        print(f"{'='*50}\n")
+    # 2. Identifikasi 'Bottleneck Link' pada Shortest Path Tree (SPT)
+    print("-" * 60)
+    max_weight = -1
+    bottleneck_edge = None
+    
+    for node, weight in spt_edge_weights.items():
+        if distances[node] != float('infinity') and weight > max_weight:
+            max_weight = weight
+            bottleneck_edge = (previous[node], node)
+
+    if bottleneck_edge:
+        print(f"[BOTTLENECK LINK SPT] Edge dengan bobot tertinggi pada Shortest Path Tree:")
+        print(f"  {bottleneck_edge[0]} <---> {bottleneck_edge[1]} dengan bobot: {max_weight} ms")
+    else:
+        print("[BOTTLENECK LINK SPT] Tidak ditemukan jalur aktif.")
+
+    print("=" * 60)
+    print("-> Kompleksitas Waktu: Big-O: O((V+E) log V)\n")
+    
+    # Mengembalikan data jarak untuk digunakan oleh fungsi audit
+    return distances
 
 
-# ═══════════════════════════════════════════════════════════
-#  Demo / smoke-test
-# ═══════════════════════════════════════════════════════════
-if __name__ == '__main__':
-    router = RoutingOptimal()
+def run_audit_latensi(graph: IoTGraph, distances: dict) -> None:
+    """
+    Melakukan audit dengan mengurutkan perangkat berdasarkan latensi ke GATEWAY
+    menggunakan algoritma Selection Sort pada Linked List (LLNode).
+    Spesifikasi: Big-O: O(V^2) di mana V adalah jumlah perangkat
+    """
+    print("=" * 60)
+    print("AUDIT LATENSI PERANGKAT (SELECTION SORT ON LINKED LIST)")
+    print("=" * 60)
 
-    # Bangun topologi contoh (40 node IoT sesuai spesifikasi)
-    # Gateway sebagai pusat
-    for i in range(5):
-        router.add_edge('GATEWAY_0', f'GATEWAY_{i+1}', round(random.uniform(5, 20), 1))
+    if not distances:
+        print("[INFO] Tidak ada data jarak untuk diaudit.")
+        return
 
-    for g in range(1, 6):
-        for s in range(1, 9):
-            router.add_edge(f'GATEWAY_{g}', f'SENSOR_{g}_{s}',
-                            round(random.uniform(10, 60), 1))
+    # 1. Masukkan data perangkat ke struktur Linked List (LLNode)
+    head = None
+    tail = None
+    
+    for node_id, dist in distances.items():
+        # Masukkan selain GATEWAY itu sendiri dan pastikan node terjangkau
+        if node_id != 'GATEWAY_0' and dist != float('infinity'):
+            # Menyimpan dictionary data di dalam field LLNode.data
+            new_node = LLNode({'id': node_id, 'latensi': dist})
+            if head is None:
+                head = new_node
+                tail = new_node
+            else:
+                tail.next = new_node
+                tail = new_node
 
-    router.add_edge('GATEWAY_0', 'SERVER_0', round(random.uniform(2, 8), 1))
+    if head is None:
+        print("[INFO] Tidak ada perangkat terhubung yang bisa diaudit.")
+        return
 
-    # Perintah CLI
-    router.routing('SENSOR_3_5')
-    router.routing('SERVER_0')
-    router.routing('GATEWAY_4')
-    router.laporan_jaringan()
+    # 2. Algoritma Selection Sort pada Linked List (Ascending / Terkecil ke Terbesar)
+    i = head
+    while i:
+        min_node = i
+        j = i.next
+        while j:
+            if j.data['latensi'] < min_node.data['latensi']:
+                min_node = j
+            j = j.next
+        
+        # Tukar posisi data (Swap) jika ditemukan node dengan latensi lebih kecil
+        if min_node != i:
+            i.data, min_node.data = min_node.data, i.data
+        i = i.next
+
+    # 3. Cetak Hasil Audit Langsung dari Penelusuran Linked List
+    print("Daftar Perangkat Terurut Berdasarkan Latensi Kumulatif ke GATEWAY:")
+    curr = head
+    idx = 1
+    while curr:
+        print(f"  {idx}. {curr.data['id']} -> Total Latensi: {curr.data['latensi']} ms")
+        curr = curr.next
+        idx += 1
+
+    print("=" * 60)
+    print("-> Kompleksitas Waktu: Big-O: O(V^2) - Selection Sort pada Linked List\n")
