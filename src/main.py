@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 """
 main.py — Entry Point Aplikasi Monitoring Jaringan IoT
 Sistem Monitoring Jaringan IoT
@@ -93,3 +94,6 @@ def main():
 
 if __name__ == '__main__':
     main()
+=======
+
+>>>>>>> ed29a9374c50f7216482ce01749f415b160d626c
