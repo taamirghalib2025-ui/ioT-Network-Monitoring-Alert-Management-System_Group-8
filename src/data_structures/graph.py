@@ -5,6 +5,7 @@ Big-O  : add_device O(1), add_link O(1), neighbors O(deg(u)), DFS O(V+E)
 """
 
 from typing import Optional, List, Tuple, Dict
+from data_structures.stack import Stack
 
 
 # ── Edge Node untuk Adjacency List ───────────────────────────────────────────
@@ -108,19 +109,25 @@ class IoTGraph:
     # ── DFS — deteksi node yang terjangkau ────────────────────────────────────
     def dfs_reachable(self, source: str) -> set:
         """
-        DFS iteratif menggunakan Python list sebagai stack.
+        DFS iteratif menggunakan Custom Stack (Linked List).
         Big-O: O(V+E).
         """
-        visited  = set()
-        stack    = [source]
-        while stack:
+        visited = set()
+        
+        # Menggunakan Stack buatan sendiri sesuai instruksi starter code
+        stack = Stack() 
+        stack.push(source)
+        
+        while stack.size > 0: # Atau 'while not stack.is_empty():' tergantung metodemu
             node = stack.pop()
             if node in visited:
                 continue
+                
             visited.add(node)
             for dest, _ in self.neighbors(node):
                 if dest not in visited:
-                    stack.append(dest)
+                    stack.push(dest)
+                    
         return visited
 
     # ── Perangkat terisolasi dari gateway ─────────────────────────────────────
@@ -136,78 +143,3 @@ class IoTGraph:
     def __repr__(self) -> str:
         return (f'IoTGraph(nodes={len(self.adj)}, '
                 f'edges={sum(self.degree(u) for u in self.adj) // 2})')
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-# RUN LANGSUNG — Demo IoTGraph
-# ══════════════════════════════════════════════════════════════════════════════
-if __name__ == '__main__':
-
-    # ── Stub Device sederhana ─────────────────────────────────────────────────
-    class Device:
-        def __init__(self, device_id: str, tipe: str = 'sensor'):
-            self.device_id = device_id
-            self.tipe      = tipe
-        def __repr__(self):
-            return f'Device({self.device_id}, {self.tipe})'
-
-    print('=' * 55)
-    print('       DEMO GRAPH TOPOLOGI JARINGAN IoT')
-    print('=' * 55)
-
-    # ── 1. Buat graph & tambah perangkat ─────────────────────────────────────
-    g = IoTGraph()
-    devices = [
-        Device('GATEWAY_0',  'gateway'),
-        Device('SENSOR_1',   'sensor'),
-        Device('SENSOR_2',   'sensor'),
-        Device('SENSOR_3',   'sensor'),
-        Device('ACTUATOR_1', 'actuator'),
-        Device('ORPHAN',     'sensor'),   # sengaja tidak dihubungkan
-    ]
-    for d in devices:
-        g.add_device(d)
-
-    print(f'\n[1] Perangkat ditambahkan : {list(g.devices.keys())}')
-    print(f'    {g}')
-
-    # ── 2. Tambah koneksi (edge) ──────────────────────────────────────────────
-    g.add_link('GATEWAY_0', 'SENSOR_1',   latensi=10)
-    g.add_link('GATEWAY_0', 'SENSOR_2',   latensi=15)
-    g.add_link('SENSOR_1',  'SENSOR_3',   latensi=20)
-    g.add_link('SENSOR_2',  'ACTUATOR_1', latensi=5)
-
-    print(f'\n[2] Setelah tambah link   : {g}')
-
-    # ── 3. Cek tetangga ───────────────────────────────────────────────────────
-    print('\n[3] Tetangga setiap node:')
-    for node in g.adj:
-        print(f'    {node:12s} -> {g.neighbors(node)}')
-
-    # ── 4. Degree ─────────────────────────────────────────────────────────────
-    print('\n[4] Degree setiap node:')
-    for node in g.adj:
-        print(f'    {node:12s} degree = {g.degree(node)}')
-
-    # ── 5. DFS dari GATEWAY_0 ─────────────────────────────────────────────────
-    reachable = g.dfs_reachable('GATEWAY_0')
-    print(f'\n[5] DFS dari GATEWAY_0 — terjangkau : {reachable}')
-
-    # ── 6. Perangkat terisolasi ───────────────────────────────────────────────
-    isolated = g.isolated_devices()
-    print(f'\n[6] Perangkat TERISOLASI  : {isolated}')
-
-    # ── 7. Hapus link ─────────────────────────────────────────────────────────
-    g.remove_link('GATEWAY_0', 'SENSOR_2')
-    print(f'\n[7] Hapus link GATEWAY_0—SENSOR_2 : {g}')
-    print(f'    Tetangga GATEWAY_0 : {g.neighbors("GATEWAY_0")}')
-    print(f'    Isolated sekarang  : {g.isolated_devices()}')
-
-    # ── 8. Hapus perangkat ────────────────────────────────────────────────────
-    g.remove_device('SENSOR_1')
-    print(f'\n[8] Hapus SENSOR_1        : {g}')
-    print(f'    Tetangga GATEWAY_0 : {g.neighbors("GATEWAY_0")}')
-
-    print('\n' + '=' * 55)
-    print('  Semua operasi selesai tanpa error!')
-    print('=' * 55)
