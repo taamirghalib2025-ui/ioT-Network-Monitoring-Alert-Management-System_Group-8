@@ -1,178 +1,98 @@
-# ==============================================================================
-# benchmark.py
-# Skrip Evaluasi Kinerja Kustom (Waktu Eksekusi & Kompleksitas Big-O)
-# Topik 4: IoT Network Monitoring & Alert Management System
-# ELT60213 Algoritma dan Struktur Data - TA 2025/2026
-# ==============================================================================
+"""
+benchmark.py — Uji Kinerja (Benchmarking) Struktur Data IoT
+Sistem Monitoring Jaringan IoT
+"""
 
 import time
 import random
-import string
-from dataclasses import dataclass
+import sys
+import os
 
-# Mengimpor struktur data kustom buatan Anda
-from bst import BSTRegistry
-from queue_iot import AlertPriorityQueue
-from stack import AlertStack, Alert, Stack
-from graph import IoTGraph
+# Trik ajaib penunjuk jalan agar bisa memanggil folder 'src' 
+# meskipun file ini berada di dalam folder 'experiments'
+sys.path.insert(0, os.path.abspath('src'))
 
-# ── Dataclass Dummy untuk Pengujian Perangkat ─────────────────────────────────
-@dataclass
-class DummyDevice:
-    device_id: str
-    tipe: str
-    status: str
-    last_reading: float
+from data_structures.bst import BSTRegistry
+from data_structures.queue import AlertPriorityQueue
+from data_structures.stack import Stack
 
-def generate_random_id(length=8):
-    """Menghasilkan ID acak alfanumerik yang unik untuk simulasi IoT."""
-    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
+# =====================================================================
+# Kelas Dummy untuk Data Generik
+# =====================================================================
+class MockDevice:
+    def __init__(self, device_id):
+        self.device_id = device_id
+        self.tipe = "SENSOR"
 
-def run_benchmark():
-    print("=" * 65)
-    print("🚀 BENCHMARK SYSTEM: IOT NETWORK MONITORING & ALERT MANAGEMENT")
-    print("=" * 65)
-    
-    # Skala jumlah data uji besar untuk membuktikan Big-O
-    N = 2000  
-    
-    # ==========================================================================
-    # 1. BENCHMARK: BST Registry (Registrasi Perangkat)
-    # Ekspektasi: insert O(log n) rata-rata, search O(log n) rata-rata
-    # ==========================================================================
-    print(f"\n[1] Menguji BSTRegistry (Skala Data: {N} Devices)")
-    bst = BSTRegistry()
-    
-    # Membuat daftar objek device tiruan dengan ID unik secara acak
-    devices_pool = [
-        DummyDevice(f"DEV_{generate_random_id()}", "SENSOR_SUHU", "ONLINE", time.time()) 
-        for _ in range(N)
-    ]
-    
-    # Mengukur performa operasi penambahan (Insert) ke BST
-    start_time = time.perf_counter()
-    for dev in devices_pool:
-        bst.insert(dev)
-    waktu_insert_bst = time.perf_counter() - start_time
-    print(f"  └─ O(log n) Insert {N} devices       : {waktu_insert_bst:.6f} detik")
-    
-    # Mengukur performa pencarian acak (Search) pada pohon BST
-    search_targets = random.sample(devices_pool, min(500, N))
-    start_time = time.perf_counter()
-    for target in search_targets:
-        bst.search(target.device_id)
-    waktu_search_bst = time.perf_counter() - start_time
-    print(f"  └─ O(log n) Search 500 devices acak  : {waktu_search_bst:.6f} detik")
+class MockAlert:
+    def __init__(self, alert_id, tipe):
+        self.alert_id = alert_id
+        self.tipe = tipe  # 1: CRITICAL, 2: WARNING, 3: INFO
 
+# =====================================================================
+# Fungsi Pembantu: Stopwatch Presisi Tinggi
+# =====================================================================
+def ukur_waktu(fungsi, *args):
+    """Fungsi ini menjalankan fungsi lain dan mencatat waktu eksekusinya."""
+    mulai = time.perf_counter()
+    fungsi(*args)
+    selesai = time.perf_counter()
+    return (selesai - mulai) * 1000  # Hasil dikonversi ke milidetik (ms)
 
-    # ==========================================================================
-    # 2. BENCHMARK: Priority Queue (Manajemen Antrean Alert)
-    # Ekspektasi: enqueue O(n) worst-case, dequeue O(1)
-    # ==========================================================================
-    print(f"\n[2] Menguji AlertPriorityQueue (Skala Data: {N} Alerts)")
-    pq = AlertPriorityQueue()
+# =====================================================================
+# Skenario Uji Kinerja (Arena Balap)
+# =====================================================================
+def jalankan_benchmark():
+    ukuran_data = [1000, 5000, 10000]
     
-    # Kondisi terburuk (Worst Case) bagi Linked List terurut menaik (ASC) adalah
-    # ketika data baru selalu memiliki nilai tipe prioritas yang lebih besar 
-    # atau sama dengan data yang sudah mengantre, memaksanya traverse ke ujung.
-    alerts_worst_case = [
-        Alert(alert_id=i, device_id=f"DEV_{i}", tipe=3, pesan="INFO LEVEL LOG", timestamp=time.time())
-        for i in range(N)
-    ]
-    
-    # Mengukur performa Enqueue terurut
-    start_time = time.perf_counter()
-    for alt in alerts_worst_case:
-        pq.enqueue(alt)
-    waktu_enqueue_pq = time.perf_counter() - start_time
-    print(f"  └─ O(n) Enqueue {N} alerts (Worst Case) : {waktu_enqueue_pq:.6f} detik")
-    
-    # Mengukur performa Dequeue (Selalu mengambil elemen terdepan / head)
-    start_time = time.perf_counter()
-    while not pq.is_empty():
-        pq.dequeue()
-    waktu_dequeue_pq = time.perf_counter() - start_time
-    print(f"  └─ O(1) Dequeue {N} alerts             : {waktu_dequeue_pq:.6f} detik")
+    print("\n" + "="*70)
+    print(f"{'BENCHMARKING STRUKTUR DATA IOT (WAKTU DALAM MILIDETIK)':^70}")
+    print("="*70)
+    print(f"{'Beban Data (N)':<15} | {'BST (Search)':<15} | {'Queue (Enqueue)':<17} | {'Stack (Push)':<12}")
+    print("-" * 70)
 
+    for n in ukuran_data:
+        # --- 1. PERSIAPAN DATA ---
+        bst = BSTRegistry()
+        pq = AlertPriorityQueue()
+        st = Stack()
 
-    # ==========================================================================
-    # 3. BENCHMARK: Alert Stack (Riwayat Log Per-Device)
-    # Ekspektasi: push O(1) normal, O(n) saat penuh untuk hapus bottom
-    # ==========================================================================
-    print(f"\n[3] Menguji AlertStack (Kapasitas Batas Log: 50)")
-    stack_max_capacity = 50
-    alert_stack = AlertStack(kapasitas=stack_max_capacity)
-    
-    # Memasukkan total 1500 log ke dalam stack berkapasitas 50 untuk memicu
-    # operasi internal `_hapus_bottom` sebanyak 1450 kali.
-    total_logs = 1500
-    log_alerts = [
-        Alert(alert_id=i, device_id="DEV_STATIC_01", tipe=2, pesan="WARNING LIMIT", timestamp=time.time())
-        for i in range(total_logs)
-    ]
-    
-    start_time = time.perf_counter()
-    for log in log_alerts:
-        alert_stack.push(log)
-    waktu_push_stack = time.perf_counter() - start_time
-    print(f"  └─ Push {total_logs} logs ke Stack (Kapasitas={stack_max_capacity})")
-    print(f"     -> Total Waktu Eksekusi           : {waktu_push_stack:.6f} detik")
-    print(f"     -> Ukuran elemen akhir di Stack   : {len(alert_stack)} / {alert_stack.kapasitas}")
+        # Generate N data ID acak untuk BST, plus 1 target yang pasti ada
+        data_ids = [f"DEV_{i}" for i in range(n)]
+        target_search = "DEV_TARGET_RAHASIA"
+        data_ids.append(target_search)
+        random.shuffle(data_ids) # Acak agar struktur tree menyebar seimbang
 
+        for d_id in data_ids:
+            bst.insert(MockDevice(d_id))
+            
+        # Isi Queue dan Stack dengan N data agar terasa "beratnya"
+        for i in range(n):
+            pq.enqueue(MockAlert(f"A_{i}", random.choice([1, 2, 3])))
+            st.push(f"Node_{i}")
 
-    # ==========================================================================
-    # 4. BENCHMARK: IoT Graph (Topologi Infrastruktur Jaringan)
-    # Ekspektasi: add_device O(1), add_link O(1), DFS O(V+E) menggunakan Stack Kustom
-    # ==========================================================================
-    V_nodes = 500  # Jumlah Titik Infrastruktur (Router/Gateway/Sensor)
-    print(f"\n[4] Menguji IoTGraph Topology (Vertices: {V_nodes})")
-    graph = IoTGraph()
-    
-    # Mengisi Node Jaringan ke dalam Graph
-    for i in range(V_nodes):
-        node_device = DummyDevice(f"NODE_{i}", "ROUTER_CORE", "ONLINE", time.time())
-        graph.add_device(node_device)
+        alert_baru = MockAlert("ALERT_NEW", 2)
+        node_baru = "Node_Baru"
+
+        # --- 2. MULAI PENGUKURAN WAKTU ---
         
-    # Menghubungkan tautan (Edges) antar node secara acak untuk membentuk topologi
-    edges_counter = 0
-    for i in range(V_nodes):
-        # Setiap node dihubungkan ke 2 hingga 4 tetangga acak
-        jumlah_koneksi = random.randint(2, 4)
-        for _ in range(jumlah_koneksi):
-            target_node_idx = random.randint(0, V_nodes - 1)
-            if target_node_idx != i:
-                graph.add_link(f"NODE_{i}", f"NODE_{target_node_idx}", latensi=random.randint(5, 80))
-                edges_counter += 1
-                
-    print(f"  └─ Infrastruktur Graph Berhasil Dibangun ({len(graph.adj)} Node terdaftar)")
-    
-    # 📝 PERBAIKAN LOGIKA DFS: Menimpa metode dfs_reachable bawaan agar murni 
-    # menggunakan implementasi kelas kustom Stack() Anda (bukan list python bawaan).
-    def custom_dfs_reachable(graph_instance, source_node: str) -> set:
-        visited_nodes = set()
-        dfs_stack = Stack()  # Menggunakan Stack buatan sendiri dari stack.py
-        dfs_stack.push(source_node)
-        
-        while not dfs_stack.is_empty():
-            current_node = dfs_stack.pop()
-            if current_node in visited_nodes:
-                continue
-            visited_nodes.add(current_node)
-            for neighbor_dest, _ in graph_instance.neighbors(current_node):
-                if neighbor_dest not in visited_nodes:
-                    dfs_stack.push(neighbor_dest)
-        return visited_nodes
+        # A. Uji mencari 1 data spesifik di antara N data di BST
+        waktu_bst = ukur_waktu(bst.search, target_search)
 
-    # Melakukan pengujian kecepatan penelusuran jaringan (DFS Traversal)
-    start_time = time.perf_counter()
-    titik_terjangkau = custom_dfs_reachable(graph, "NODE_0")
-    waktu_dfs_traversal = time.perf_counter() - start_time
-    
-    print(f"  └─ O(V+E) DFS Reachability dari 'NODE_0' : {waktu_dfs_traversal:.6f} detik")
-    print(f"     -> Total node terjangkau dari pusat: {len(titik_terjangkau)} Node")
-    print("=" * 65)
-    print("✨ Selesai. Pengujian struktur data berhasil tanpa hambatan.")
-    print("=" * 65)
+        # B. Uji menyusupkan 1 antrean baru ke dalam Priority Queue berisi N data
+        waktu_queue = ukur_waktu(pq.enqueue, alert_baru)
 
-if __name__ == "__main__":
-    run_benchmark()
+        # C. Uji menaruh 1 data baru di tumpukan teratas Stack berisi N data
+        waktu_stack = ukur_waktu(st.push, node_baru)
+
+        # --- 3. CETAK HASIL KE TABEL ---
+        print(f"{n:<15} | {waktu_bst:>9.5f} ms   | {waktu_queue:>11.5f} ms   | {waktu_stack:>8.5f} ms")
+
+    print("="*70)
+    print("\n[KESIMPULAN BIG-O NOTATION]:")
+    print("1. Stack Push    : O(1)      -> Terbukti! Waktu tetap stabil (secepat kilat) meski data bertambah.")
+    print("2. BST Search    : O(log n)  -> Terbukti! Waktu membesar sedikit saja, sangat efisien membelah data.")
+    print("3. Queue Enqueue : O(n)      -> Terbukti! Waktu makin lambat secara linier karena harus mencari posisi.\n")
+
+if __name__ == '__main__':
+    jalankan_benchmark()

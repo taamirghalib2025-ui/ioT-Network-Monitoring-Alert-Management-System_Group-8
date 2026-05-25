@@ -1,3 +1,4 @@
+
 """
 BST Device Registry
 Kunci: device_id

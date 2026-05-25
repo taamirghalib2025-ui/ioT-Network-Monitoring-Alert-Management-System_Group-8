@@ -1,3 +1,6 @@
+<<<<<<< HEAD
+
+=======
 import numpy as np
 import random
 from dataclasses import dataclass
@@ -301,3 +304,4 @@ def demo_modul1():
 # ════════════════════════════════════════════════════════════
 if __name__ == '__main__':
     demo_modul1()
+>>>>>>> b639c124380ee13dd4b4ed5bdac21aa762b7bab2
