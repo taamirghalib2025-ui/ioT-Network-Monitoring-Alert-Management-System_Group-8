@@ -1,0 +1,8 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Hasil eksperimen besar (simpan di Google Drive, bukan repo)
+*.csv
+*.pkl
+data/large_*
