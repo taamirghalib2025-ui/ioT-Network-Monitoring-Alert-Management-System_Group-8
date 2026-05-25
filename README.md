@@ -36,7 +36,7 @@ Sistem memodelkan jaringan perangkat IoT yang saling terhubung dengan kemampuan:
 |------|-----|--------|------------|
 | Muhamad Fahdillah Setyo Wibowo | 25051030081 | [@fadilwibowo373-droid](https://github.com/fadilwibowo373-droid) | Queue & BST · Modul 2 & 3 · Test BST & Queue · Benchmark · `main.py` · Laporan & Slide |
 | Muhamad Padang Tazaka | 25051030121 | [@mpadangtazaka-netizen](https://github.com/mpadangtazaka-netizen) | Linked List & Stack · Modul 4 & 5 · Test Stack · Slide · README · Laporan |
-| Nauval Fadhlurohman As-sidiq | 25051030120 | [@nauvalfadhluroman2025-droid](https://github.com/nauvalfadhluroman2025-droid) | Graph · Modul 1 · Test Graph · Laporan & Slide |
+| Nauval Fadhlurohman As-sidiq | 25051030120 | [@nauvalfadhluroman2025-droid](https://github.com/nauvalfadhluroman2025-droid) | Graph · Modul 1 · Test Graph · Modul 6 (CLI) · Laporan & Slide |
 | Taamir Ghalib Athallah | 25051030092 | [@taamirghalib2025-ui](https://github.com/taamirghalib2025-ui) | Repository & manajemen tim · Modul 6 (CLI) · Laporan & Slide |
 
 ---
